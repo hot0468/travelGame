@@ -175,10 +175,37 @@ REGIONS.busan = {
     { id: 'samrak', gu: '사상구', name: '삼락 오리불고기', type: 'food', sub: 'meal', lat: 35.1720, lng: 128.9720, cost: 24000, stay: 80, joy: 7, open: [660, 1260] },
     { id: 'myeongji', gu: '강서구', name: '명지 대파삼겹살', type: 'food', sub: 'meal', lat: 35.0955, lng: 128.9105, cost: 19000, stay: 75, joy: 8, open: [960, 1380] },
 
+
+    // 지역별 대표 식사 (2차 추가)
+    { id: 'wandang', gu: '중구', name: '18번완당집', type: 'food', sub: 'meal', lat: 35.0992, lng: 129.0275, cost: 9000, stay: 40, joy: 7, open: [630, 1260] },
+    { id: 'hdmilmyeon', gu: '해운대구', name: '해운대 밀면', type: 'food', sub: 'meal', lat: 35.1625, lng: 129.1608, cost: 9500, stay: 40, joy: 7, open: [630, 1230] },
+    { id: 'millak', gu: '수영구', name: '민락동 회타운', type: 'food', sub: 'meal', closed: [1], lat: 35.1520, lng: 129.1235, cost: 38000, stay: 90, joy: 9, open: [660, 1380] },
+    { id: 'seomyeongalbi', gu: '부산진구', name: '서면 돼지갈비골목', type: 'food', sub: 'meal', lat: 35.1560, lng: 129.0598, cost: 20000, stay: 80, joy: 8, open: [660, 1380] },
+    { id: 'ksgopchang', gu: '남구', name: '경성대 곱창', type: 'food', sub: 'meal', lat: 35.1372, lng: 129.0995, cost: 17000, stay: 70, joy: 7, open: [1020, 1440] },
+    { id: 'myeongnyun', gu: '동래구', name: '명륜동 떡볶이', type: 'food', sub: 'meal', closed: [0], lat: 35.2100, lng: 129.0790, cost: 6000, stay: 30, joy: 6, open: [660, 1260] },
+    { id: 'gomjangeo', gu: '기장군', name: '기장 곰장어', type: 'food', sub: 'meal', lat: 35.2440, lng: 129.2220, cost: 24000, stay: 80, joy: 8, open: [660, 1320] },
+    { id: 'sanchae', gu: '금정구', name: '범어사 산채정식', type: 'food', sub: 'meal', lat: 35.2840, lng: 129.0700, cost: 15000, stay: 60, joy: 7, open: [600, 1140] },
+    { id: 'bongnae', gu: '영도구', name: '봉래동 밀면', type: 'food', sub: 'meal', lat: 35.0930, lng: 129.0430, cost: 8500, stay: 40, joy: 7, open: [630, 1200] },
+    { id: 'hwamyeong', gu: '북구', name: '화명동 갈매기살', type: 'food', sub: 'meal', lat: 35.2320, lng: 129.0110, cost: 16000, stay: 70, joy: 7, open: [1020, 1380] },
+    { id: 'eosijang', gu: '서구', name: '부산공동어시장 회', type: 'food', sub: 'meal', lat: 35.0900, lng: 129.0180, cost: 30000, stay: 80, joy: 8, open: [420, 1200] },
+    { id: 'deokpo', gu: '사상구', name: '덕포시장 순대국', type: 'food', sub: 'meal', lat: 35.1600, lng: 128.9790, cost: 9000, stay: 45, joy: 6, open: [420, 1260] },
+    { id: 'myeongjiori', gu: '강서구', name: '명지 오리구이', type: 'food', sub: 'meal', lat: 35.0980, lng: 128.9130, cost: 22000, stay: 80, joy: 7, open: [660, 1320] },
+    { id: 'gamchennoodle', gu: '사하구', name: '감천 손칼국수', type: 'food', sub: 'meal', lat: 35.0968, lng: 129.0115, cost: 8000, stay: 40, joy: 6, open: [630, 1200] },
+    { id: 'choryang', gu: '동구', name: '초량 밀면', type: 'food', sub: 'meal', lat: 35.1155, lng: 129.0400, cost: 9000, stay: 40, joy: 7, open: [630, 1200] },
+    { id: 'yeonsannakji', gu: '연제구', name: '연산동 낙지볶음', type: 'food', sub: 'meal', lat: 35.1830, lng: 129.0790, cost: 16000, stay: 60, joy: 7, open: [660, 1320] },
+
     // 카페
     { id: 'jeonpo', gu: '부산진구', name: '전포 카페거리', type: 'food', sub: 'cafe', lat: 35.1545, lng: 129.0645, cost: 8000, stay: 50, joy: 7, open: [660, 1320] },
     { id: 'huincafe', gu: '영도구', name: '흰여울 오션뷰 카페', type: 'food', sub: 'cafe', lat: 35.0772, lng: 129.0448, cost: 9000, stay: 60, joy: 8, open: [600, 1260] },
     { id: 'dadaecafe', gu: '사하구', name: '다대포 선셋 카페', type: 'food', sub: 'cafe', lat: 35.0478, lng: 128.9672, cost: 7500, stay: 50, joy: 7, open: [660, 1380] },
+
+    { id: 'waveon', gu: '기장군', name: '웨이브온 커피', type: 'food', sub: 'cafe', lat: 35.2560, lng: 129.2260, cost: 9000, stay: 70, joy: 9, open: [600, 1320] },
+    { id: 'dalmaji', gu: '해운대구', name: '달맞이고개 카페', type: 'food', sub: 'cafe', lat: 35.1560, lng: 129.1780, cost: 9500, stay: 60, joy: 8, open: [600, 1320] },
+    { id: 'beacon', gu: '수영구', name: '비콘그라운드', type: 'food', sub: 'cafe', lat: 35.1690, lng: 129.1050, cost: 7500, stay: 50, joy: 7, open: [660, 1260] },
+    { id: 'bookcafe', gu: '중구', name: '백년어서원 북카페', type: 'food', sub: 'cafe', lat: 35.1000, lng: 129.0330, cost: 6500, stay: 60, joy: 7, open: [600, 1200] },
+    { id: 'igidaecafe', gu: '남구', name: '이기대 오션뷰 카페', type: 'food', sub: 'cafe', lat: 35.1268, lng: 129.1230, cost: 9000, stay: 55, joy: 8, open: [600, 1260] },
+    { id: 'teahouse', gu: '금정구', name: '범어사 앞 전통찻집', type: 'food', sub: 'cafe', lat: 35.2830, lng: 129.0690, cost: 8000, stay: 50, joy: 7, open: [540, 1140] },
+    { id: 'gupocafe', gu: '북구', name: '구포 강변 카페', type: 'food', sub: 'cafe', lat: 35.2100, lng: 128.9990, cost: 7000, stay: 50, joy: 6, open: [630, 1260] },
 
     // ── 숙소 (cost = 1박 2인실 기준, stay=0: 취침하면 그날 종료) ──
     { id: 'gh_nampo', gu: '중구', name: '남포동 게스트하우스', type: 'stay', tier: 'guesthouse', lat: 35.0993, lng: 129.0290, cost: 25000, stay: 0, joy: 4, open: [900, 1440] },
@@ -197,33 +224,33 @@ REGIONS.busan = {
       id: 'q1', lv: 1, title: '첫 손님 · 바다가 보고 싶어요',
       from: '서울', stamina: 110, staminaType: 'energizer', age: '20대', startDow: 4,
       desc: '서울에서 갑니다. 부산 처음이에요. 바다만 보면 돼요.',
-      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, par: 375
+      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, par: 395
     },
     {
       id: 'q2', lv: 1, title: '뚜벅이 커플 · 알뜰하게',
       from: '대구', stamina: 100, staminaType: 'morning', age: '30대', startDow: 5,
       desc: '대구에서 갑니다. 부산에선 대중교통만 탈게요. 감천이랑 자갈치는 꼭이요!',
       days: 2, budget: 240000, people: 2, must: ['gamcheon', 'jagalchi'], minSights: 4,
-      banModes: ['taxi', 'car'], par: 455
+      banModes: ['taxi', 'car'], par: 410
     },
     {
       id: 'q3', lv: 2, title: '당일치기 출장 뒤풀이',
       from: '대구', stamina: 95, staminaType: 'night', age: '40대', startDow: 2,
       desc: '대구에서 아침에 출발해 당일로 다녀옵니다. 용궁사는 꼭 보고 싶어요. 셋이서 갑니다.',
-      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, par: 270
+      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, par: 290
     },
     {
       id: 'q4', lv: 3, title: '부모님 효도여행',
       from: '광주', stamina: 75, staminaType: 'motionsick', age: '60대 이상', startDow: 1,
       desc: '광주에서 부모님 모시고 갑니다. 많이 걷긴 힘드세요. 숙소는 호텔로.',
       days: 3, budget: 1100000, people: 4, must: ['taejongdae', 'beomeosa'], minSights: 5,
-      minStayTier: 'hotel', par: 380
+      minStayTier: 'hotel', par: 400
     },
     {
       id: 'q5', lv: 4, title: '아이 둘 데리고 가는 가족',
       from: '제주', stamina: 90, staminaType: 'morning', age: '아이 동반', startDow: 4,
       desc: '제주에서 아이 둘 데리고 갑니다. 롯데월드는 필수! 이동은 편했으면 해요.',
-      days: 3, budget: 1200000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, par: 445
+      days: 3, budget: 1200000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, par: 450
     }
   ]
 };
