@@ -1,0 +1,1572 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>여행설계사 · 부산</title>
+<style>
+  :root{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef4; --line:#ccd6e0;
+    --fg:#1b2531; --dim:#61707f; --acc:#1668d6; --ok:#1a7f3c; --warn:#a06800; --bad:#c62828;
+    --sight:#1a7fd4; --food:#d9660a; --stay:#8b52e0;
+    --glass:rgba(255,255,255,.9);      /* 지도 위에 뜨는 패널 */
+    --sel:#e3efff;                     /* 선택된 카드·행 */
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 "Pretendard","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--fg);height:100vh;overflow:hidden}
+  header{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:16px;padding:10px 16px;
+         background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  header h1{font-size:16px;margin:0;letter-spacing:-.02em}
+  .grow{flex:1}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:12px}
+  .xpbar{width:120px;height:6px;background:var(--panel2);border-radius:3px;overflow:hidden}
+  .xpbar i{display:block;height:100%;background:var(--acc)}
+  /* 지도는 화면 전체. 좌·우 패널은 그 위에 떠 있는 반투명 레이어. */
+  .panel{position:absolute;top:53px;bottom:0;z-index:15;display:flex;flex-direction:column;min-height:0;
+         background:rgba(255,255,255,.88);backdrop-filter:blur(12px)}
+  .panel.right{right:0;width:490px;border-left:1px solid var(--line)}
+  /* 오른쪽 창 2단: 왼쪽 타임라인 / 오른쪽 일정 정보·합계 */
+  .rcols{display:flex;flex:1;min-height:0}
+  .tlcol{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
+  .infocol{width:242px;flex:0 0 242px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .infoscroll{flex:1;overflow-y:auto;min-height:0}
+  .infocol .edit{border-top:1px solid var(--line);margin-top:8px}
+  /* 좌상단 HUD — 의뢰 요약과 필터만. 목록은 없애고 장소는 지도에서 직접 고른다. */
+  .hud{position:absolute;top:63px;left:12px;z-index:14;width:238px;display:flex;flex-direction:column;gap:7px}
+  .hud .card{margin:0;padding:11px 13px;background:var(--glass);backdrop-filter:blur(10px);cursor:default}
+  .qline{font-size:13px;color:#3d4c5c;line-height:1.7;margin-top:2px}
+  .hud .card:hover{border-color:var(--line)}
+  .hud .tabs{padding:0;background:var(--glass);backdrop-filter:blur(10px);border-radius:8px}
+  /* 구 이름을 누르면 뜨는 그 구의 장소 목록 */
+  #gulist{background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border:1px solid var(--acc);
+          border-radius:8px;overflow:hidden;animation:popin .2s cubic-bezier(.34,1.56,.64,1)}
+  .guhd{display:flex;align-items:center;gap:6px;padding:7px 10px;border-bottom:1px solid var(--line);background:var(--sel)}
+  .gubody{max-height:44vh;overflow-y:auto}
+  .gurow{display:flex;align-items:center;gap:7px;padding:6px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--line)}
+  .gurow:hover{background:var(--sel)}
+  .gurow.lock{opacity:.42;cursor:not-allowed;color:var(--dim);filter:grayscale(1)}
+  .gurow .fav{color:var(--ok)}
+  .gnm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #map [data-gu]{cursor:pointer}
+  #map [data-gu]:hover{fill:#1a7fd4}
+  /* 지도 위 장소 상세 팝업 */
+  #poipop{position:fixed;z-index:18;width:236px;background:var(--panel);border:1px solid var(--acc);
+          border-radius:10px;padding:11px 13px;box-shadow:0 12px 34px #1b253126,0 0 0 4px #1668d61f;
+          transform-origin:50% 100%;animation:popin .26s cubic-bezier(.34,1.56,.64,1)}
+  /* 팝업이 아래에서 튀어오르며 살짝 넘겼다 제자리로 */
+  @keyframes popin{from{opacity:0;transform:scale(.7) translateY(14px)}to{opacity:1;transform:none}}
+  /* 선택한 핀에서 퍼져나가는 파동 */
+  @keyframes ripple{from{transform:scale(1);opacity:.7}to{transform:scale(2.6);opacity:0}}
+  @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.35)}100%{transform:scale(1)}}
+  .pin.sel .ring{transform-box:fill-box;transform-origin:center;animation:ripple 1.1s ease-out infinite}
+  .pin.sel .dot{transform-box:fill-box;transform-origin:center;animation:pop .45s cubic-bezier(.34,1.56,.64,1)}
+  .pin:hover .dot{transform-box:fill-box;transform-origin:center;transform:scale(1.18);transition:transform .12s}
+  /* 일정에 담을 때 떠오르는 +1 */
+  @keyframes floatup{from{opacity:1;transform:translate(-50%,0) scale(1)}
+                     to{opacity:0;transform:translate(-50%,-46px) scale(1.5)}}
+  .fx{position:fixed;z-index:19;pointer-events:none;font-weight:800;font-size:17px;color:var(--ok);
+      text-shadow:0 1px 3px #fff,0 0 12px #fff;animation:floatup .85s ease-out forwards}
+  @media (prefers-reduced-motion:reduce){#poipop,.pin.sel .ring,.pin.sel .dot,.fx{animation:none}}
+  #poipop .hd{display:flex;align-items:flex-start;gap:6px}
+  #poipop h4{margin:0;font-size:14px;flex:1}
+  #poipop .kv{font-size:12px;color:var(--dim);margin-top:5px;line-height:1.6}
+  #poipop button.go{margin-top:9px;padding:7px;font-size:13px}
+  .panel.hide{transform:translateX(0)}
+  .panel.left.hide{transform:translateX(-100%)}
+  .panel.right.hide{transform:translateX(100%)}
+  .panel{transition:transform .18s ease}
+  .fold{position:absolute;top:50%;width:18px;height:56px;margin-top:-28px;z-index:16;cursor:pointer;
+        background:var(--glass);border:1px solid var(--line);color:var(--dim);
+        display:flex;align-items:center;justify-content:center;font-size:11px}
+  .panel.left .fold{right:-19px;border-radius:0 6px 6px 0}
+  .panel.right .fold{left:-19px;border-radius:6px 0 0 6px}
+  .fold:hover{color:var(--fg)}
+  .scroll{overflow-y:auto;padding:12px;flex:1}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:0 0 8px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer}
+  .card:hover{border-color:var(--acc)}
+  .card.on{border-color:var(--acc);background:var(--sel)}
+  .card.lock{opacity:.45;cursor:not-allowed;filter:grayscale(1)}
+  .card.lock:hover{border-color:var(--line)}
+  .t{font-weight:600}
+  .s{font-size:12px;color:var(--dim)}
+  .tabs{display:flex;gap:4px;padding:10px 12px 0}
+  .tabs button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--dim);padding:6px;border-radius:6px;cursor:pointer;font-size:12px}
+  .tabs button.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+  /* 지형 이미지는 transform 으로 확대. 핀·글자 SVG 는 화면 좌표계 1:1 로 매번 다시 그린다.
+     (SVG 를 CSS 로 확대하면 원래 해상도로 래스터화된 뒤 늘어나서 글자가 뿌옇게 된다) */
+  .mapwrap{position:absolute;inset:0;z-index:1;background:#cfdde3;overflow:hidden;cursor:grab}
+  .mapwrap.grabbing{cursor:grabbing}
+  .mapcanvas{position:absolute;left:0;top:0;transform-origin:0 0}
+  .mapcanvas img{position:absolute;left:0;top:0;display:block;user-select:none;-webkit-user-drag:none}
+  #map{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  #map [data-poi],#map [data-start],#map [data-gu]{pointer-events:auto}
+  /* 밝은 지도 위에서도 반드시 읽히게 — CC BY-SA 저작자 표시는 빼먹으면 안 되는 항목 */
+  .maphint{position:absolute;left:50%;transform:translateX(-50%);bottom:8px;z-index:14;max-width:60vw;
+           font-size:10.5px;color:var(--dim);line-height:1.4;text-align:center;
+           background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:1px solid var(--line);
+           border-radius:999px;padding:4px 14px}
+  .maphint a{color:var(--acc)}
+  /* 지도 조작은 상단바 중앙 — 지도 위에 떠 있으면 시야를 가린다 */
+  .mapctl{display:flex;align-items:center;gap:3px;background:var(--panel2);border:1px solid var(--line);
+          border-radius:8px;padding:3px}
+  .mapctl button{width:26px;height:24px;border:0;border-radius:5px;cursor:pointer;
+                 background:transparent;color:var(--dim);font-size:14px;font-family:inherit;line-height:1}
+  .mapctl button:hover{background:var(--line);color:var(--fg)}
+  .buffbar{display:flex;gap:3px}
+  .bchip{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;
+         background:var(--sel);border:1px solid var(--acc);color:var(--acc)}
+  .zoomtxt{font-size:11px;color:var(--dim);min-width:42px;text-align:center;font-variant-numeric:tabular-nums}
+  /* 아이콘: 글자 크기·색을 그대로 따라가게 */
+  .ic{width:1em;height:1em;flex:0 0 auto;vertical-align:-0.14em;fill:none;stroke:currentColor;
+      stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ic.big{width:1.15em;height:1.15em}
+  /* 일정표 상단 도착 교통편 요약 */
+  .arrbar{padding:8px 12px 0;font-size:12px}
+  .arrline{display:flex;align-items:center;gap:8px;line-height:1.85}
+  .arrline .k{color:var(--dim);flex:0 0 62px;display:flex;align-items:center;gap:4px}
+  .arrline b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .arrnote{margin-left:70px}
+  .mini.wide{width:100%;margin-top:7px;padding:4px}
+  .arrbar b{font-weight:700}
+  .mini{background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:5px;
+        padding:2px 8px;font-size:11px;cursor:pointer;font-family:inherit}
+  .mini:hover{border-color:var(--acc);color:var(--acc)}
+  /* 집에서 부산까지 오는 구간 */
+  .arrive{background:repeating-linear-gradient(45deg,#dce7f5,#dce7f5 6px,#eaf1fa 6px,#eaf1fa 12px);
+          border:1px solid #9fb9d8;color:#274b73;z-index:1}
+  /* ── 인터랙션 연출 ─────────────────────────────── */
+  /* 손님 반응 토스트 — 상단에 잠깐 떴다 사라진다 */
+  #toasts{position:fixed;top:62px;left:50%;transform:translateX(-50%);z-index:22;
+          display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+  .toast{display:flex;align-items:center;gap:8px;padding:9px 15px;border-radius:999px;
+         background:var(--panel);border:1px solid var(--acc);font-size:13.5px;white-space:nowrap;
+         box-shadow:0 6px 20px #1b253126;
+         animation:toastin .28s cubic-bezier(.34,1.56,.64,1), toastout .45s ease 2.6s forwards}
+  .toast .ic{color:var(--acc);flex:0 0 auto}
+  .toast.fav{border-color:var(--ok)}   .toast.fav .ic{color:var(--ok)}
+  .toast.tired{border-color:var(--warn)} .toast.tired .ic{color:var(--warn)}
+  .toast.broke{border-color:var(--bad)}  .toast.broke .ic{color:var(--bad)}
+  @keyframes toastin{from{opacity:0;transform:translateY(-12px) scale(.9)}to{opacity:1;transform:none}}
+  @keyframes toastout{to{opacity:0;transform:translateY(-10px)}}
+  /* 숫자가 바뀔 때 방향을 색으로 */
+  .stat b{transition:color .2s}
+  .stat b.better{color:var(--ok)} .stat b.worse{color:var(--bad)}
+  /* 체력바는 부드럽게, 바닥나면 경고 */
+  .stam .bar i{transition:width .35s ease,background .3s}
+  .stam .bar i.low{animation:pulse 1.1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+  /* 새로 담긴 일정 블록이 밀려 들어온다 */
+  .blk.new{animation:slidein .32s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes slidein{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+  .blk{transition:filter .12s}
+  .blk:hover{filter:brightness(.96)}
+  /* 제출이 가능해지는 순간 */
+  button.go.ready{animation:ready 1.4s ease-in-out 2}
+  @keyframes ready{0%,100%{box-shadow:0 0 0 0 #1668d600}50%{box-shadow:0 0 0 7px #1668d633}}
+  .card,button.go,.mini,.gurow{transition:transform .08s}
+  .card:active,button.go:active,.mini:active{transform:scale(.985)}
+  @media (prefers-reduced-motion:reduce){.blk.new,button.go.ready,.stam .bar i.low{animation:none}}
+  .row{display:flex;align-items:center;gap:6px}
+  /* 시간 비례 타임라인: 블록 높이 = 실제 소요 분 × PPM */
+  .tl{position:relative;margin:0 0 18px 50px}
+  .hr{position:absolute;left:0;right:0;border-top:1px solid var(--line)}
+  .hr b{position:absolute;left:-50px;top:-7px;width:44px;text-align:right;font:600 12px/1 inherit;color:var(--dim);font-variant-numeric:tabular-nums}
+  .hr.mid{border-top-style:dotted;opacity:.5}
+  .hr.mn{border-top:1px solid var(--acc);opacity:.55}          /* 자정 */
+  .tlhint{position:absolute;left:0;right:66px;text-align:center;font-size:12px;color:var(--dim);z-index:4}
+  .blk{position:absolute;left:0;right:66px;border-radius:5px;padding:1px 6px;overflow:hidden;cursor:pointer;
+       font-size:11px;line-height:1.35;white-space:nowrap;text-overflow:ellipsis}
+  .blk.lane{left:auto;right:0;width:60px;padding:1px 4px;font-size:10px;text-align:center}  /* 이동·대기 전용 트랙 (오른쪽) */
+  .blk.on{outline:2px solid var(--acc);outline-offset:1px;z-index:3}
+  .blk.err{border-color:var(--bad)!important;background:#ffe1e1!important}
+  .blk .nm{font-weight:600}
+  .blk .tm{font-variant-numeric:tabular-nums;opacity:.75;font-size:10px}
+  .move{background:repeating-linear-gradient(45deg,#e6ebf1,#e6ebf1 5px,#f3f6f9 5px,#f3f6f9 10px);
+        border:1px solid var(--line);color:var(--dim);z-index:1}
+  .move.rush{background:repeating-linear-gradient(45deg,#fbe6c9,#fbe6c9 5px,#fdf3e4 5px,#fdf3e4 10px);border-color:#d9a63a;color:#8a5a00}
+  .wait{background:#fdf3dd;border:1px dashed #d9a63a;color:#8a5a00;z-index:1}
+  .sight{background:#dfeeff;border:1px solid #1a7fd4;color:#0d3c66;z-index:2}
+  .food{background:#ffe9d6;border:1px solid #d9660a;color:#7a3800;z-index:2}
+  .stay{background:#efe4ff;border:1px solid #8b52e0;color:#4a1f8a;z-index:2}
+  .edit{border-top:1px solid var(--line);background:var(--panel2);padding:8px 12px;font-size:12px;flex:0 0 auto}
+  .edit .row{flex-wrap:wrap;row-gap:4px}
+  .edit .row>*{white-space:nowrap}
+  .time{font-variant-numeric:tabular-nums;color:var(--acc);font-weight:600}
+  select,input[type=number]{background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:5px;padding:2px 5px;font-size:11px;font-family:inherit}
+  input[type=number]{width:58px}
+  .x{margin-left:auto;color:var(--dim);cursor:pointer;padding:0 4px;font-size:15px;line-height:1}
+  .x:hover{color:var(--bad)}
+  .mv{color:var(--dim);cursor:pointer;padding:0 2px;user-select:none}
+  .mv:hover{color:var(--fg)}
+  footer{border-top:1px solid var(--line);padding:10px 12px;background:var(--panel);flex:0 0 auto}
+  .stat{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+  .stat b{font-variant-numeric:tabular-nums}
+  .over{color:var(--bad)}
+  .msgs{margin:0;padding:0;list-style:none;font-size:12px}
+  .warns{padding:8px 11px!important}
+  .warns .msgs li{display:flex;gap:5px;align-items:flex-start;line-height:1.5}
+  .msgs li{color:var(--bad);margin-bottom:3px}
+  .msgs li.ok{color:var(--ok)}
+  button.go{width:100%;margin-top:8px;padding:9px;border:0;border-radius:7px;background:var(--acc);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+  button.go:disabled{background:var(--panel2);color:#7d8a99;font-size:12px;font-weight:600;line-height:1.35;cursor:not-allowed}
+  .dayhd{font-size:11px;color:var(--dim);letter-spacing:.06em;margin:2px 0 8px;border-bottom:1px solid var(--line);padding-bottom:4px}
+  .daytabs{padding:8px 12px 0}
+  .daytabs:empty{display:none}
+  .daytabs button b{font-weight:700;opacity:.75}
+  .daytabs .dw{font-size:10px;opacity:.7;margin-left:2px}
+  .wakerow{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:13.5px}
+  .wakerow>span{white-space:nowrap;flex:0 0 auto}
+  .wakerow select{flex:1 1 auto;width:100%;min-width:0;font-size:14px;padding:4px 6px}
+  .sleepnote{margin-top:4px;font-size:12.5px}
+  .stambar .stam .s{font-size:13px}
+  .stam{margin-top:0}
+  .stambar{padding:9px 10px 7px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .stambar:empty{display:none}
+  .stam .bar{position:relative;height:8px;background:var(--panel2);border-radius:4px;overflow:hidden}
+  .stam .bar i{position:absolute;left:0;top:0;height:100%;background:var(--ok);border-radius:4px;z-index:2}
+  .stam .bar i.low{background:var(--warn)}
+  .stam .bar i.out{background:var(--bad);width:100%!important}
+  .stam .s{display:block;margin-top:3px}
+  dialog{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:22px 26px;max-width:380px;text-align:center}
+  dialog.wide{max-width:560px;width:90vw;text-align:left;max-height:86vh;overflow-y:auto}
+  dialog::backdrop{background:#0b1a2a66;backdrop-filter:blur(3px)}
+  dialog h3{margin:0 0 6px;font-size:20px}
+  .stars{display:flex;justify-content:center;gap:8px;margin:10px 0}
+  .stars .ic{width:38px;height:38px;stroke:#c9d2dc;stroke-width:1.6}
+  .stars .ic.on{fill:#f5a524;stroke:#d98c00}
+  .ic.ok{color:var(--ok)}
+  .empty{color:var(--dim);font-size:12px;text-align:center;padding:30px 10px}
+</style>
+</head>
+<body>
+<!-- Lucide v1.30.0 icons — ISC License, (c) Lucide Contributors. https://lucide.dev -->
+<svg id="icons" aria-hidden="true" style="display:none">
+  <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M4.929 4.929 19.07 19.071" /></symbol>
+  <symbol id="i-bed-double" viewBox="0 0 24 24"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8" /> <path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4" /> <path d="M12 4v6" /> <path d="M2 18h20" /></symbol>
+  <symbol id="i-bus" viewBox="0 0 24 24"><path d="M8 6v6" /> <path d="M15 6v6" /> <path d="M2 12h19.6" /> <path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3" /> <circle cx="7" cy="18" r="2" /> <path d="M9 18h5" /> <circle cx="16" cy="18" r="2" /></symbol>
+  <symbol id="i-calendar-days" viewBox="0 0 24 24"><path d="M8 2v3" /> <path d="M16 2v3" /> <rect x="3" y="3" width="18" height="18" rx="2" /> <path d="M3 9h18" /> <path d="M8 13h.01" /> <path d="M12 13h.01" /> <path d="M16 13h.01" /> <path d="M8 17h.01" /> <path d="M12 17h.01" /> <path d="M16 17h.01" /></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /> <circle cx="12" cy="13" r="3" /></symbol>
+  <symbol id="i-car-taxi-front" viewBox="0 0 24 24"><path d="M10 2h4" /> <path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.646 5H8.4a2 2 0 0 0-1.903 1.257L5 10 3 8" /> <path d="M7 14h.01" /> <path d="M17 14h.01" /> <rect width="18" height="8" x="3" y="10" rx="2" /> <path d="M5 18v2" /> <path d="M19 18v2" /></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" /> <circle cx="7" cy="17" r="2" /> <path d="M9 17h6" /> <circle cx="17" cy="17" r="2" /></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol>
+  <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6" /></symbol>
+  <symbol id="i-circle-check-big" viewBox="0 0 24 24"><path d="M21.801 10A10 10 0 1 1 17 3.335" /> <path d="m9 11 3 3L22 4" /></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 6v6l4 2" /></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z" /></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528" /></symbol>
+  <symbol id="i-hotel" viewBox="0 0 24 24"><path d="M10 22v-6.57" /> <path d="M12 11h.01" /> <path d="M12 7h.01" /> <path d="M14 15.43V22" /> <path d="M15 16a5 5 0 0 0-6 0" /> <path d="M16 11h.01" /> <path d="M16 7h.01" /> <path d="M8 11h.01" /> <path d="M8 7h.01" /> <rect x="4" y="2" width="16" height="20" rx="2" /></symbol>
+  <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M5 22h14" /> <path d="M5 2h14" /> <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /> <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol>
+  <symbol id="i-maximize" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3" /> <path d="M21 8V5a2 2 0 0 0-2-2h-3" /> <path d="M3 16v3a2 2 0 0 0 2 2h3" /> <path d="M16 21h3a2 2 0 0 0 2-2v-3" /></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
+  <symbol id="i-party-popper" viewBox="0 0 24 24"><path d="M5.8 11.3 2 22l10.7-3.79" /> <path d="M4 3h.01" /> <path d="M22 8h.01" /> <path d="M15 2h.01" /> <path d="M22 20h.01" /> <path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" /> <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17" /> <path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7" /> <path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z" /></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14" /> <path d="M12 5v14" /></symbol>
+  <symbol id="i-smile" viewBox="0 0 24 24"><path d="M15 10V9" /> <path d="M16.472 15a6 6 0 01-8.943 0" /> <path d="M9 10V9" /> <circle cx="12" cy="12" r="10" /></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" /></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <circle cx="12" cy="12" r="6" /> <circle cx="12" cy="12" r="2" /></symbol>
+  <symbol id="i-timer" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2" /> <line x1="12" x2="15" y1="14" y2="11" /> <circle cx="12" cy="14" r="8" /></symbol>
+  <symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /> <path d="M16 3.128a4 4 0 0 1 0 7.744" /> <path d="M22 21v-2a4 4 0 0 0-3-3.87" /> <circle cx="9" cy="7" r="4" /></symbol>
+  <symbol id="i-utensils" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /> <path d="M7 2v20" /> <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /> <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></symbol>
+  <symbol id="i-train-front" viewBox="0 0 24 24"><path d="M8 3.1V7a4 4 0 0 0 8 0V3.1" /> <path d="m9 15-1-1" /> <path d="m15 15 1-1" /> <path d="M9 19c-2.8 0-5-2.2-5-5v-4a8 8 0 0 1 16 0v4c0 2.8-2.2 5-5 5Z" /> <path d="m8 19-2 3" /> <path d="m16 19 2 3" /></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" /></symbol>
+  <symbol id="i-ship" viewBox="0 0 24 24"><path d="M12 10.189V14" /> <path d="M12 2v3" /> <path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6" /> <path d="M19.38 20A11.6 11.6 0 0 0 21 14l-8.188-3.639a2 2 0 0 0-1.624 0L3 14a11.6 11.6 0 0 0 2.81 7.76" /> <path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1s1.2 1 2.5 1c2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" /></symbol>
+  <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14" /> <path d="m12 5 7 7-7 7" /></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z" /></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" /></symbol>
+  <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M12 2v8" /> <path d="m4.93 10.93 1.41 1.41" /> <path d="M2 18h2" /> <path d="M20 18h2" /> <path d="m19.07 10.93-1.41 1.41" /> <path d="M22 22H2" /> <path d="m8 6 4-4 4 4" /> <path d="M16 18a4 4 0 0 0-8 0" /></symbol>
+  <symbol id="i-waves" viewBox="0 0 24 24"><path d="M2 12q2.5 2 5 0t5 0 5 0 5 0" /> <path d="M2 19q2.5 2 5 0t5 0 5 0 5 0" /> <path d="M2 5q2.5 2 5 0t5 0 5 0 5 0" /></symbol>
+  <symbol id="i-battery" viewBox="0 0 24 24"><path d="M 22 14 L 22 10" /> <rect x="2" y="6" width="16" height="12" rx="2" /></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /> <path d="M13 5v2" /> <path d="M13 17v2" /> <path d="M13 11v2" /></symbol>
+  <symbol id="i-percent" viewBox="0 0 24 24"><line x1="19" x2="5" y1="5" y2="19" /> <circle cx="6.5" cy="6.5" r="2.5" /> <circle cx="17.5" cy="17.5" r="2.5" /></symbol>
+  <symbol id="i-armchair" viewBox="0 0 24 24"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3" /> <path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z" /> <path d="M5 18v2" /> <path d="M19 18v2" /></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /> <path d="M20 2v4" /> <path d="M22 4h-4" /> <circle cx="4" cy="20" r="2" /></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><path d="M12 7v14" /> <path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8" /> <path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5" /> <rect x="3" y="7" width="18" height="4" rx="1" /></symbol>
+  <symbol id="i-ferris-wheel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2" /> <path d="M12 2v4" /> <path d="m6.8 15-3.5 2" /> <path d="m20.7 7-3.5 2" /> <path d="M6.8 9 3.3 7" /> <path d="m20.7 17-3.5-2" /> <path d="m9 22 3-8 3 8" /> <path d="M8 22h8" /> <path d="M18 18.7a9 9 0 1 0-12 0" /></symbol>
+  <symbol id="i-shopping-bag" viewBox="0 0 24 24"><path d="M16 10a4 4 0 0 1-8 0" /> <path d="M3.103 6.034h17.794" /> <path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></symbol>
+  <symbol id="i-trees" viewBox="0 0 24 24"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z" /> <path d="M7 16v6" /> <path d="M13 19v3" /> <path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5" /></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" /></symbol>
+  <symbol id="i-landmark" viewBox="0 0 24 24"><path d="M10 18v-7" /> <path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z" /> <path d="M14 18v-7" /> <path d="M18 18v-7" /> <path d="M3 22h18" /> <path d="M6 18v-7" /></symbol>
+  <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M10 2v2" /> <path d="M14 2v2" /> <path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1" /> <path d="M6 2v2" /></symbol>
+  <symbol id="i-tram-front" viewBox="0 0 24 24"><rect width="16" height="16" x="4" y="3" rx="2" /> <path d="M4 11h16" /> <path d="M12 3v8" /> <path d="m8 19-2 3" /> <path d="m18 22-2-3" /> <path d="M8 15h.01" /> <path d="M16 15h.01" /></symbol>
+</svg>
+<header>
+  <h1><svg class="ic big"><use href="#i-compass"/></svg> 여행설계사</h1>
+  <span class="chip" id="regionName">부산</span>
+  <span class="grow"></span>
+  <div class="mapctl">
+    <button id="zout" title="축소"><svg class="ic"><use href="#i-minus"/></svg></button>
+    <span class="zoomtxt" id="zoomtxt"></span>
+    <button id="zin" title="확대"><svg class="ic"><use href="#i-plus"/></svg></button>
+    <button id="zfit" title="전체 보기"><svg class="ic"><use href="#i-maximize"/></svg></button>
+  </div>
+  <span class="grow"></span>
+  <span class="chip">Lv.<b id="lv">1</b></span>
+  <span class="buffbar" id="buffbar"></span>
+  <div class="xpbar"><i id="xpfill" style="width:0%"></i></div>
+  <span class="s" id="xptxt">0 XP</span>
+</header>
+
+<!-- 지도: 화면 전체를 채우는 바닥 레이어 -->
+<div class="mapwrap" id="mapwrap">
+  <!-- 지형 이미지만 transform 으로 확대·이동한다 -->
+  <div class="mapcanvas" id="mapcanvas"><img id="mapimg" alt="" hidden></div>
+  <!-- 핀·글자는 화면 좌표계 1:1 (확대해도 늘려 그리지 않으므로 항상 선명) -->
+  <svg id="map"></svg>
+</div>
+<div class="maphint" id="maphint"></div>
+
+<main>
+  <!-- 좌상단 HUD: 진행 중인 의뢰 + 표시 필터 -->
+  <div class="hud">
+    <div id="active"></div>
+    <div id="warns"></div>
+    <div class="tabs" id="filters">
+      <button data-tab="all" class="on">전체</button>
+      <button data-tab="sight">관광</button>
+      <button data-tab="food">식당</button>
+      <button data-tab="stay">숙소</button>
+    </div>
+    <div id="gulist" hidden></div>
+  </div>
+
+  <!-- 지도에서 장소를 클릭하면 뜨는 상세 정보 -->
+  <div id="poipop" hidden></div>
+<div id="toasts"></div>
+
+  <!-- 우: 일정 (지도 위 레이어) -->
+  <div class="panel right" id="pright">
+    <div class="fold" data-fold="pright"><svg class="ic"><use href="#i-chevron-right"/></svg></div>
+    <div class="rcols">
+      <!-- 왼쪽: 타임라인만 -->
+      <div class="tlcol">
+        <div class="stambar" id="stambar"></div>
+        <div class="scroll" id="plan"></div>
+      </div>
+      <!-- 오른쪽: 일정 정보 + 합계 + 제출 -->
+      <div class="infocol">
+        <div class="infoscroll">
+          <div class="row" style="padding:12px 12px 0"><h2 style="margin:0">일정표</h2></div>
+          <div class="arrbar" id="arrbar"></div>
+          <div class="tabs daytabs" id="daytabs"></div>
+          <div class="edit" id="edit"></div>
+        </div>
+        <footer id="sum"></footer>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- 시작 화면: 의뢰 고르기 -->
+<dialog id="pick" class="wide">
+  <h3>어떤 의뢰를 맡으시겠습니까?</h3>
+  <p class="s" style="margin:0 0 14px">
+    손님의 예산·일정·필수 코스에 맞춰 부산 여행을 설계하는 게임입니다.
+    최소 비용으로 최대한 알차게 — 레벨이 오르면 쓸 수 있는 장소와 의뢰가 늘어납니다.
+  </p>
+  <div id="quests"></div>
+  <button class="go" id="pickclose">돌아가기</button>
+</dialog>
+
+<!-- 의뢰를 고르면 이어서 뜨는 도착 교통편 선택 -->
+<dialog id="trip" class="wide">
+  <h3 id="triphd"></h3>
+  <p class="s" style="margin:0 0 14px">부산까지 오는 비용도 손님 예산에서 나갑니다. 싼 편은 늦게 도착해 첫날이 짧아집니다.</p>
+  <div id="tripopts"></div>
+</dialog>
+
+<!-- 레벨업 보상: 2종 중 1개 -->
+<dialog id="buff" class="wide">
+  <h3><svg class="ic big"><use href="#i-gift"/></svg> 레벨업 보상</h3>
+  <p class="s" style="margin:0 0 14px">둘 중 하나를 고르세요. 한 번 고르면 영구히 적용됩니다.</p>
+  <div id="buffopts"></div>
+</dialog>
+
+<!-- 장소를 넣을 때 그 구간의 교통수단 고르기 -->
+<dialog id="move" class="wide">
+  <h3 id="movehd"></h3>
+  <p class="s" style="margin:0 0 14px" id="movesub"></p>
+  <div id="moveopts"></div>
+</dialog>
+
+<dialog id="result"></dialog>
+
+<script src="data/busan.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────
+// 엔진
+// ─────────────────────────────────────────────────────────────
+const DETOUR = 1.35;           // 직선거리 → 실도로 보정계수
+const CAR_DAILY = 70000;       // 렌터카 1일 대여료
+const DAY_START = 540;         // 2일차부터의 기본 기상 시각 (1일차는 부산 도착 시각)
+
+// ── 체력 ────────────────────────────────────────────────────
+// 이동은 체력을 깎고, 식사는 회복시킨다. 분당 소모량.
+const DRAIN_MOVE = { bus: .25, subway: .20, taxi: .10, car: .13 };   // 버스가 가장 고됨
+const DRAIN_STAY = { sight: .16, food: -.15, stay: 0 };     // 식사는 회복 (카페는 아래에서 절반)
+// ── 영구 버프 ────────────────────────────────────────────────
+// 레벨이 오를 때마다 2종 중 1개를 골라 영구히 얻는다. 효과는 compute() 안에서 적용.
+const BUFFS = {
+  hotelclub:   { name: '제휴 호텔',       ico: 'hotel',    desc: '호텔 숙박비가 5% 저렴해집니다' },
+  transitpass: { name: '지역교통할인패스', ico: 'ticket',   desc: '대중교통비가 하루 최대 6,000원까지만 부과됩니다' },
+  groupticket: { name: '단체 입장권',     ico: 'percent',  desc: '관광지 입장료가 15% 저렴해집니다' },
+  taxicoupon:  { name: '택시 호출 쿠폰',   ico: 'car-taxi-front', desc: '택시 기본요금이 면제됩니다' },
+  rentalclub:  { name: '렌터카 멤버십',   ico: 'car',      desc: '렌터카 일 대여료가 30% 저렴해집니다' },
+  foodie:      { name: '미식가 인맥',     ico: 'utensils', desc: '식당의 만족도가 +2' },
+  guide:       { name: '현지 가이드',     ico: 'sparkles', desc: '관광지의 만족도가 +1' },
+  comfyseat:   { name: '편안한 좌석',     ico: 'armchair', desc: '이동할 때 체력 소모가 25% 줄어듭니다' },
+  sleepwell:   { name: '숙면 안대',       ico: 'moon',     desc: '6시간 30분만 자도 충분히 회복합니다' }
+};
+
+const SLEEP_FULL = 480;        // 충분한 수면(8시간). 이보다 적으면 다음날 체력 한계가 준다.
+const EARLY = [240, 480];      // 야행성이 힘들어하는 새벽 구간 (04:00~08:00)
+
+// 구간 [a,b] 중 새벽 시간대에 걸친 분
+function earlyMin(a, b) {
+  let o = 0;
+  for (let d = Math.floor(a / 1440); d <= Math.floor(b / 1440); d++)
+    o += Math.max(0, Math.min(b, d * 1440 + EARLY[1]) - Math.max(a, d * 1440 + EARLY[0]));
+  return o;
+}
+// 타입을 반영한 실제 소모량. rate>0 이면 소모, <0 이면 회복.
+function drain(rate, a, b, type, isMove, buff) {
+  const len = Math.max(0, b - a);
+  let v = rate * len;
+  if (isMove && buff && buff('comfyseat')) v *= .75;
+  if (type === 'energizer') v *= .7;
+  if (type === 'motionsick' && isMove) v *= 2;
+  if (type === 'night' && v > 0) {                 // 새벽에 걸친 만큼만 가중
+    const e = earlyMin(a, b);
+    v = rate * ((len - e) + e * 1.6) * 1;
+  }
+  return v;
+}
+const TRANSPORT = {
+  bus:    { name: '버스',    ico: 'bus',            kmh: 18, extra: 8,  fare: (km, p) => 1500 * p },
+  subway: { name: '지하철',  ico: 'tram-front',     kmh: 26, extra: 6,  fare: (km, p) => 1600 * p },
+  taxi:   { name: '택시',    ico: 'car-taxi-front', kmh: 24, extra: 2,  fare: (km, p) => Math.ceil(p / 4) * (4800 + Math.max(0, km - 2) * 1000) },
+  car:    { name: '렌터카',  ico: 'car',            kmh: 28, extra: 10, fare: (km) => km * 200 }
+};
+const PUBLIC = ['bus', 'subway'];            // 교통패스가 적용되는 대중교통
+
+// 출퇴근 시간대에는 도로가 막힌다. 지하철은 정시성이 있어 영향받지 않는다.
+const RUSH = [[450, 570], [1080, 1200]];     // 07:30~09:30, 18:00~20:00
+const RUSH_MODES = ['bus', 'taxi', 'car'];
+// 이동 구간이 정체 시간대에 걸친 만큼만 비례해 늘린다 (전부 걸치면 1.5배)
+function rushFactor(mode, from, min, weekend) {
+  if (weekend || from == null || min <= 0 || !RUSH_MODES.includes(mode)) return 1;
+  const to = from + min;
+  let ov = 0;
+  for (let d = Math.floor(from / 1440); d <= Math.floor(to / 1440); d++)
+    for (const [a, b] of RUSH)
+      ov += Math.max(0, Math.min(to, d * 1440 + b) - Math.max(from, d * 1440 + a));
+  return 1 + .5 * Math.min(1, ov / min);
+}
+const TIER_RANK = { guesthouse: 1, motel: 2, hotel: 3 };
+// d일차의 요일 (0=월 … 6=일)
+const dowOf = (q, d) => q ? ((q.startDow || 0) + d) % 7 : 0;
+const dowName = (r, n) => r.dayNames[n];
+const isWeekend = n => n >= 5;           // 토·일
+// 의뢰인 연령대가 이 관광지의 세부 타입을 선호하는가
+function likesSub(q, p) {
+  if (!q || p.type !== 'sight' || !p.sub) return false;
+  const a = REGIONS[q.region || 'busan'].ageTypes[q.age];
+  return !!a && a.likes.includes(p.sub);
+}
+const TIER_NAME = { guesthouse: '게스트하우스', motel: '모텔·레지던스', hotel: '호텔' };
+
+function km(a, b) { // haversine
+  const R = 6371, r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+// ponytail: 직선거리×보정계수 근사. 실 API(카카오/TMap)로 바꾸려면 이 함수만 교체하면 됨.
+function travel(a, b, mode, people, depart, weekend) {
+  const t = TRANSPORT[mode], d = km(a, b) * DETOUR;
+  const base = Math.round(d / t.kmh * 60) + t.extra;
+  const f = rushFactor(mode, depart, base, weekend);
+  return { min: Math.round(base * f), base, rush: f > 1, km: d, cost: Math.round(t.fare(d, people)) };
+}
+
+// 손님이 고른 도착 교통편. 없으면 그 출발지의 첫 번째.
+function arrival(state) {
+  const q = state.quest; if (!q) return null;
+  const opts = REGIONS[state.region].origins[q.from] || [];
+  return opts.find(o => o.id === state.arriveId) || opts[0] || null;
+}
+// 시작지점 = 도착 교통편이 내려주는 곳
+function startPoint(state) {
+  const list = REGIONS[state.region].starts, a = arrival(state);
+  return list.find(s => s.id === (a && a.to)) || list[0];
+}
+// 초기 이동비(편도). 자차는 차 1대(4인)당, 나머지는 1인당.
+function arrivalCost(state) {
+  const a = arrival(state); if (!a) return 0;
+  const people = state.quest.people;
+  return a.cost * (a.per === 'car' ? Math.ceil(people / 4) : people);
+}
+
+const hhmm = m => String(Math.floor((m % 1440) / 60)).padStart(2, '0') + ':' + String(Math.round(m % 60)).padStart(2, '0');
+const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
+
+// 일정 시뮬레이션 → 타임라인 + 비용 + 위반사항
+function compute(state) {
+  const R = REGIONS[state.region], q = state.quest;
+  const people = q ? q.people : 2, maxDay = q ? q.days : 1;
+  const arr = arrival(state);
+  const wakeAt = d => d === 0 ? (arr ? arr.arrive : state.startMin)
+                              : d * 1440 + ((state.wake || {})[d] ?? DAY_START);
+  let cur = wakeAt(0), day = 0, prev = startPoint(state);
+  let spend = 0, moveMin = 0, joy = 0, stays = 0;
+  const carDays = new Set(), rows = [], bad = [], visited = new Set();
+
+  // 영구 버프
+  const has = id => (state.buffs || []).includes(id);
+  const sleepNeed = has('sleepwell') ? 390 : SLEEP_FULL;
+  const transitDay = {};                       // 교통패스 상한 계산용
+
+  // 체력: 1일차는 부산까지 오느라 이미 얼마간 쓴 상태로 시작한다
+  const type = q ? q.staminaType : 'energizer';
+  const full = q ? q.stamina : 100;
+  let cap = full, stam = full;
+  if (arr) stam -= drain(arr.per === 'car' ? .14 : .08, wakeAt(0) - arr.min, wakeAt(0), type, true, has);
+  const dayStat = [{ cap, start: stam, low: stam }];
+  const useStam = v => { stam = Math.min(cap, stam - v); dayStat[day].low = Math.min(dayStat[day].low, stam); };
+
+  for (let i = 0; i < state.plan.length; i++) {
+    const e = state.plan[i], p = poi(e.id);
+    const dow = dowOf(q, day);
+    const t = travel(prev, p, e.mode, people, cur, isWeekend(dow));
+    const arrive = cur + t.min;
+    const openAt = day * 1440 + p.open[0], closeAt = day * 1440 + p.open[1];
+    const begin = Math.max(arrive, openAt);
+    const end = begin + e.stay;
+    const errs = [];
+
+    if (day >= maxDay) errs.push(`${maxDay}일차를 초과했습니다`);
+    if (p.closed && p.closed.includes(dow)) errs.push(`${dowName(R, dow)}요일 휴무일`);
+    if (arrive > closeAt) errs.push(`영업 종료(${hhmm(p.open[1])}) 이후 도착`);
+    else if (end > closeAt) errs.push(`영업 종료(${hhmm(p.open[1])}) 전에 못 나옴`);
+    if (end > day * 1440 + 1440) errs.push('자정을 넘김');
+
+    // 비용 (버프 반영)
+    let payFor = p.type === 'stay' ? Math.ceil(people / 2) : people;
+    let placeCost = p.cost * payFor;
+    if (p.type === 'stay' && R.weekendStay.days.includes(dow)) placeCost *= R.weekendStay.rate;   // 금·토 할증
+    if (has('hotelclub') && p.type === 'stay' && p.tier === 'hotel') placeCost *= .95;
+    if (has('groupticket') && p.type === 'sight') placeCost *= .85;
+    let legCost = t.cost;
+    if (has('taxicoupon') && e.mode === 'taxi') legCost = Math.max(0, legCost - 4800 * Math.ceil(people / 4));
+    if (PUBLIC.includes(e.mode)) transitDay[day] = (transitDay[day] || 0) + legCost;
+    placeCost = Math.round(placeCost); legCost = Math.round(legCost);
+    spend += placeCost + legCost;
+    if (e.mode === 'car') carDays.add(day);
+    moveMin += t.min;
+    // 같은 숙소 연박은 매번 만족도를 주지만, 관광지·식당 재방문은 첫 방문만 인정
+    if (p.type === 'stay' || !visited.has(p.id))
+      joy += p.joy + (has('foodie') && p.type === 'food' ? 2 : 0) + (has('guide') && p.type === 'sight' ? 1 : 0)
+           + (likesSub(q, p) ? 3 : 0);
+    visited.add(p.id);
+
+    // 체력: 이동으로 깎이고, 머무는 동안 종류에 따라 깎이거나 회복된다
+    const dMove = drain(DRAIN_MOVE[e.mode], cur, arrive, type, true, has);
+    const dStay = drain(DRAIN_STAY[p.type] * (p.type === 'food' && p.sub === 'cafe' ? .5 : 1), begin, end, type, false, has);
+    useStam(dMove); useStam(dStay);
+
+    rows.push({ i, poi: p, day, leg: t, mode: e.mode, arrive, wait: begin - arrive, begin, end, stay: e.stay,
+                cost: placeCost + legCost, errs, dMove, dStay, stam });
+    errs.forEach(m => bad.push(`${p.name}: ${m}`));
+
+    prev = p;
+    if (p.type === 'stay') {
+      // 취침 → 수면 시간만큼 회복. 부족하면 다음날 한계 자체가 준다.
+      const bed = arrive, nextWake = wakeAt(day + 1), sleep = Math.max(0, nextWake - bed);
+      const bedRel = bed - day * 1440;
+      let next = full * Math.max(.5, Math.min(1.1, sleep / sleepNeed));
+      if (type === 'morning' && bedRel > 1380)          // 23시 넘겨 자면 아침형은 추가 손해
+        next -= full * .04 * Math.ceil((bedRel - 1380) / 30);
+      stays++; day++;
+      cap = Math.max(full * .3, Math.round(next));
+      stam = cap; cur = nextWake;
+      dayStat.push({ cap, start: stam, low: stam, sleep, bed });
+    } else cur = end;
+  }
+  while (dayStat.length < maxDay) dayStat.push({ cap: full, start: full, low: full });
+  dayStat.forEach((s2, d) => { if (s2.low < 0) bad.push(`${d + 1}일차 체력 소진 (${Math.round(s2.low)})`); });
+  // 마지막 일정에서 출발지점으로 돌아가는 구간 (지도의 출발지점을 눌러 지정)
+  let back = null;
+  if (q && state.ret && state.plan.length) {
+    const homePt = startPoint(state), bd = dowOf(q, day);
+    const t = travel(prev, homePt, state.ret.mode, people, cur, isWeekend(bd));
+    spend += t.cost; moveMin += t.min;
+    useStam(drain(DRAIN_MOVE[state.ret.mode], cur, cur + t.min, type, true, has));
+    back = { leg: t, mode: state.ret.mode, day, begin: cur, end: cur + t.min, name: homePt.name };
+    if (back.end > day * 1440 + 1440) bad.push('귀가가 자정을 넘깁니다');
+  }
+
+  // 자차로 왔으면 여행 내내 그 차를 쓰므로 렌터카 대여료가 없다
+  spend += (arr && arr.per === 'car' ? 0 : carDays.size * CAR_DAILY * (has('rentalclub') ? .7 : 1));
+  // 교통패스: 대중교통비는 하루 6,000원을 넘지 않는다
+  if (has('transitpass')) Object.values(transitDay).forEach(v => { spend -= Math.max(0, v - 6000); });
+  spend = Math.round(spend);
+  spend += arrivalCost(state);
+
+  // 제약 검사
+  if (q) {
+    const ids = state.plan.map(e => e.id);
+    q.must.forEach(id => { if (!ids.includes(id)) bad.push(`필수 코스 누락: ${poi(id).name}`); });
+    const sights = new Set(state.plan.filter(e => poi(e.id).type === 'sight').map(e => e.id)).size;
+    if (sights < q.minSights) bad.push(`관광지 ${q.minSights}곳 이상 필요 (현재 ${sights})`);
+    if (stays !== q.days - 1) bad.push(`숙소는 ${q.days - 1}곳 필요 (현재 ${stays})`);
+    if (spend > q.budget) bad.push(`예산 초과 ${won(spend - q.budget)}`);
+    (q.banModes || []).forEach(m => {
+      if (state.plan.some(e => e.mode === m)) bad.push(`${TRANSPORT[m].name} 이용 불가 의뢰`);
+    });
+    if (q.minStayTier) state.plan.forEach(e => {
+      const p = poi(e.id);
+      if (p.type === 'stay' && TIER_RANK[p.tier] < TIER_RANK[q.minStayTier])
+        bad.push(`숙소 등급 부족: ${p.name} (${TIER_NAME[q.minStayTier]} 이상 요구)`);
+    });
+    if (state.plan.length && poi(state.plan.at(-1).id).type === 'stay')
+      bad.push('마지막 일정이 숙소입니다 (마지막 날은 취침 불필요)');
+    if (state.plan.length && !state.ret) bad.push('돌아가는 교통편이 없습니다 (지도의 출발지점을 누르세요)');
+  }
+
+  const budget = q ? q.budget : 0;
+  const score = Math.round(joy * 10 - moveMin * 1.0 + (budget ? (budget - spend) / budget * 100 : 0));
+  return { rows, spend, moveMin, joy, score, bad, days: day + 1, dayStat, full, type, back };
+}
+
+function stars(score, par) { return score >= par * 1.25 ? 3 : score >= par ? 2 : score >= par * 0.75 ? 1 : 0; }
+
+// ─────────────────────────────────────────────────────────────
+// 상태
+// ─────────────────────────────────────────────────────────────
+const SAVE = 'travelgame.v1';
+const S = Object.assign({ region: 'busan', quest: null, plan: [], startMin: 540, startId: null, buffs: [], sel: null, pop: null, gu: null, day: 0, arriveId: null, ret: null, wake: {}, tab: 'all', xp: 0, cleared: [] },
+  JSON.parse(localStorage.getItem(SAVE) || '{}'));
+S.plan = S.plan || [];
+
+const level = () => Math.min(5, 1 + Math.floor(S.xp / 120));
+const hasBuff = id => S.buffs.includes(id);
+const ST = q => REGIONS[S.region].staminaTypes[q.staminaType];
+const AT = q => REGIONS[S.region].ageTypes[q.age];
+const SUBT = p => REGIONS[S.region].sightTypes[p.sub] || { name: '관광지', ico: 'camera' };
+const FOODT = p => REGIONS[S.region].foodTypes[p.sub] || { name: '식당', ico: 'utensils' };
+// 지금 보고 있는 일차에 이 장소가 쉬는가
+const isClosedToday = p => !!(p.closed && S.quest && p.closed.includes(dowOf(S.quest, S.day)));
+// 지도 핀 안에 그릴 아이콘 — 색은 대분류, 아이콘은 세부 타입을 나타낸다
+const pinIcon = p => p.type === 'sight' ? SUBT(p).ico
+                   : p.type === 'food' ? FOODT(p).ico
+                   : p.tier === 'hotel' ? 'hotel' : 'bed-double';
+const wakeOf = d => d === 0 ? (arrival(S) ? arrival(S).arrive : S.startMin) : (S.wake[d] ?? DAY_START);
+const poi = id => REGIONS[S.region].pois.find(p => p.id === id);
+const save = () => localStorage.setItem(SAVE, JSON.stringify({ xp: S.xp, cleared: S.cleared, buffs: S.buffs }));
+
+// ─────────────────────────────────────────────────────────────
+// 렌더
+// ─────────────────────────────────────────────────────────────
+const $ = s => document.querySelector(s);
+// Lucide 아이콘 (상단 스프라이트의 symbol 을 참조). 크기·색은 CSS 로 따라간다.
+const ic = (n, cls) => `<svg class="ic ${cls || ''}"><use href="#i-${n}"/></svg>`;
+const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+function render() {
+  const R = REGIONS[S.region], lv = level();
+  $('#regionName').textContent = R.name;
+  $('#lv').textContent = lv;
+  $('#xpfill').style.width = (S.xp % 120) / 120 * 100 + '%';
+  $('#xptxt').textContent = S.xp + ' XP';
+  document.querySelectorAll('#filters [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
+  $('#buffbar').innerHTML = S.buffs.map(b => BUFFS[b]
+    ? `<span class="bchip" title="${esc(BUFFS[b].name)} — ${esc(BUFFS[b].desc)}">${ic(BUFFS[b].ico)}</span>` : '').join('');
+
+  // 도착 교통편 요약 (일정표 상단)
+  const arr = arrival(S), home = startPoint(S);
+  $('#arrbar').innerHTML = arr ? `
+    <div class="arrline"><span class="k">${ic('map-pin')} 출발</span><b>${esc(S.quest.from)}</b></div>
+    <div class="arrline"><span class="k">${ic(arr.ico)} 수단</span><b>${esc(arr.name)}</b></div>
+    <div class="arrline"><span class="k">${ic('flag')} 도착</span><b>${esc(home.name)} ${hhmm(arr.arrive)}</b></div>
+    <div class="arrline"><span class="k">${ic('wallet')} 이동비</span><b>${won(arrivalCost(S))}</b></div>
+    <div class="s arrnote">${arr.per === 'car' ? '자차 · 여행 중 렌터카비 없음' : `${won(arr.cost)} × ${S.quest.people}인`}</div>
+    <button class="mini wide" data-act="trip">교통편 변경</button>`
+    : '<span class="s">의뢰를 선택하세요</span>';
+
+  // 의뢰 선택 목록 (시작 화면)
+  $('#quests').innerHTML = R.quests.map(q => {
+    const lock = q.lv > lv, on = S.quest && S.quest.id === q.id;
+    const done = S.cleared.includes(q.id) ? ' ' + ic('circle-check-big', 'ok') : '';
+    return `<div class="card ${lock ? 'lock' : ''} ${on ? 'on' : ''}" data-quest="${q.id}">
+      <div class="t">${esc(q.title)}${done}</div>
+      <div class="s">${lock ? `${ic("lock")} Lv.${q.lv} 부터 열립니다` : esc(q.desc)}</div>
+      ${lock ? '' : `<div class="s" style="margin-top:5px">${ic("wallet")} ${won(q.budget)} · ${ic("calendar-days")} ${q.days}일 · ${ic("users")} ${q.people}인 · ${ic("target")} 관광 ${q.minSights}곳+
+        ${q.banModes ? ` · ${ic("ban")} ` + q.banModes.map(m => TRANSPORT[m].name).join('/') : ''}
+        ${q.minStayTier ? ` · ${ic("hotel")} ` + TIER_NAME[q.minStayTier] + ' 이상' : ''}</div>
+        <div class="s" style="margin-top:3px">${ic("star")} 필수: ${q.must.map(id => esc(poi(id).name)).join(', ')}</div>
+        <div class="s">${ic(ST(q).ico)} ${ST(q).name} · 체력 ${q.stamina} — ${esc(ST(q).desc)}</div>
+        <div class="s">${ic('heart')} ${esc(q.age)} — ${esc(AT(q).desc)}</div>`}
+    </div>`;
+  }).join('');
+  $('#pickclose').hidden = !S.quest;
+
+  // 좌상단 HUD: 진행 중인 의뢰 (작게)
+  const q = S.quest;
+  $('#active').innerHTML = q ? `<div class="card on">
+      <div class="t" style="font-size:15px">${esc(q.title)}</div>
+      <div class="qline">${ic("wallet")} ${won(q.budget)} · ${ic("calendar-days")} ${q.days}일 · ${ic("users")} ${q.people}인</div>
+      <div class="qline">${ic("target")} 관광 ${q.minSights}곳 · ${ic("bed-double")} 숙소 ${q.days - 1}곳${q.banModes ? ` · ${ic("ban")} ` + q.banModes.map(m => TRANSPORT[m].name).join('/') : ''}${q.minStayTier ? ` · ${ic("hotel")} ` + TIER_NAME[q.minStayTier] + ' 이상' : ''}</div>
+      <div class="qline">${ic("star")} ${q.must.map(id => esc(poi(id).name)).join(", ")}</div>
+      <div class="qline" title="${esc(ST(q).desc)}">${ic(ST(q).ico)} ${ST(q).name} · 체력 ${q.stamina}</div>
+      <div class="qline" title="${esc(AT(q).desc)}">${ic('heart')} ${esc(q.age)} · ${AT(q).likes.map(k => REGIONS[S.region].sightTypes[k].name).join(', ')} 선호</div>
+      <button class="go" data-act="pick" style="margin-top:9px;padding:6px;font-size:13px">다른 의뢰</button>
+    </div>` : `<div class="card"><span class="s">의뢰를 선택하세요</span></div>`;
+
+  // 지도 배경 + 출처 표시 (CC BY-SA 는 저작자·라이선스·수정여부 표시가 의무)
+  const mi = R.mapImage, img = $('#mapimg');
+  img.hidden = !mi;
+  if (mi) { if (img.getAttribute('src') !== mi.src) img.src = mi.src; img.width = mi.vw; img.height = mi.vh; }
+  $('#maphint').innerHTML = mi
+    ? `행정구역 지도: <a href="${mi.sourceUrl}" target="_blank">${R.name} 행정구역도</a> © ${mi.credit},
+       <a href="${mi.licenseUrl}" target="_blank">${mi.license}</a>
+       — 수정함(${mi.modified}). 핀 위치는 실좌표를 투영한 근사값.`
+    : '지도는 위치감을 위한 간략도 · 거리·시간은 실좌표 기준';
+
+  const R2 = compute(S);
+  renderMap();
+  if (S.pop) openPoi(S.pop);     // 열려 있던 팝업 내용 갱신 (포함 횟수 등)
+  renderGuList();
+  renderPlan(R2);
+  renderSum(R2);
+}
+
+// 지도 -------------------------------------------------------
+// 실제 지도 이미지가 있으면 그 캔버스·범위를 쓰고, 없으면 좌표만으로 생성한 약도를 쓴다.
+const mapBox = () => {
+  const m = REGIONS[S.region].mapImage;
+  return m ? { vw: m.vw, vh: m.vh, b: m.bounds } : { vw: 700, vh: 800, b: REGIONS[S.region].bounds };
+};
+// 위경도 → 화면 픽셀. 배율·이동이 이미 반영된 값이라 SVG 를 따로 확대할 필요가 없다.
+function px(p) {
+  const { vw, vh, b } = mapBox();
+  return [(p.lng - b.w) / (b.e - b.w) * vw * V.k + V.tx,
+          (b.n - p.lat) / (b.n - b.s) * vh * V.k + V.ty];
+}
+
+// 겹침을 푼 뒤의 핀 화면 좌표. renderMap 이 채우고 경로선·팝업이 같이 참조한다.
+const PIN = new Map();
+
+// 원이 서로 겹치지 않게 밀어낸다. 실제 위치에서 최대 MAXPUSH 픽셀까지만 어긋나고,
+// 확대할수록 원래 간격이 벌어지므로 밀어낼 일도 저절로 사라진다.
+const MAXPUSH = 46;
+function layoutPins(list, radiusOf) {
+  const a = list.map((p, i) => { const [x, y] = px(p); return { p, i, x, y, ox: x, oy: y, r: radiusOf(p) }; });
+  for (let pass = 0; pass < 60; pass++) {
+    let moved = false;
+    for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) {
+      const A = a[i], B = a[j], need = A.r + B.r + 4;
+      let dx = B.x - A.x, dy = B.y - A.y, d = Math.hypot(dx, dy);
+      if (d >= need) continue;
+      if (d < 0.01) { dx = Math.cos(i * 2.399); dy = Math.sin(i * 2.399); d = 1; }  // 좌표가 똑같을 때
+      const k = (need - d) / 2 / d;
+      A.x -= dx * k; A.y -= dy * k; B.x += dx * k; B.y += dy * k;
+      moved = true;
+    }
+    if (!moved) break;
+  }
+  // 원래 위치에서 너무 멀어지지 않게 잡아둔다
+  a.forEach(o => {
+    const dx = o.x - o.ox, dy = o.y - o.oy, d = Math.hypot(dx, dy);
+    if (d > MAXPUSH) { o.x = o.ox + dx / d * MAXPUSH; o.y = o.oy + dy / d * MAXPUSH; }
+  });
+  return a;
+}
+// ── 확대/이동 ───────────────────────────────────────────────
+// k=배율, tx/ty=화면 오프셋. 지도 이미지와 핀 SVG 를 감싼 컨테이너에 한 번만 적용한다.
+const V = { k: 0, tx: 0, ty: 0, auto: true };
+const ZMIN = 0.4, ZMAX = 8;
+
+function applyView() {
+  $('#mapcanvas').style.transform = `translate(${V.tx}px,${V.ty}px) scale(${V.k})`;
+  $('#zoomtxt').textContent = Math.round(V.k * 100) + '%';
+  renderMap();      // 핀·글자는 화면 좌표로 그려두므로 시점이 바뀌면 다시 그린다
+}
+function fitView() {
+  const { vw, vh } = mapBox(), r = $('#mapwrap').getBoundingClientRect();
+  V.k = Math.min(r.width / vw, r.height / vh) * 0.98;
+  V.tx = (r.width - vw * V.k) / 2;
+  V.ty = (r.height - vh * V.k) / 2;
+  V.auto = true;
+  applyView();
+}
+// (mx,my) 화면 좌표를 고정한 채 배율만 바꾼다
+function zoomAt(mx, my, f) {
+  const k2 = Math.min(ZMAX, Math.max(ZMIN, V.k * f));
+  if (k2 === V.k) return;
+  V.tx = mx - (mx - V.tx) * k2 / V.k;
+  V.ty = my - (my - V.ty) * k2 / V.k;
+  V.k = k2; V.auto = false;
+  closePoi();              // 팝업은 핀 위치에 붙어 있으므로 배율이 바뀌면 닫는다
+  applyView();
+}
+
+function renderMap() {
+  const R = REGIONS[S.region], lv = level(), { vw, vh } = mapBox();
+  if (!V.k) { fitView(); return; }          // 첫 렌더는 화면에 맞춤
+  const svg = $('#map'), rc = $('#mapwrap').getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${rc.width} ${rc.height}`);   // SVG 1단위 = 화면 1픽셀
+  $('#mapcanvas').style.width = vw + 'px';
+  $('#mapcanvas').style.height = vh + 'px';
+
+  let g = '';
+
+  if (R.mapImage) {
+    // 지명은 이미지에서 떼어내 여기서 그린다 — 화면 좌표라 확대해도 늘어나지 않는다
+    (R.mapImage.labels || []).forEach(l => {
+      const [x, y] = px(l), sea = l.kind === 'sea';
+      g += `<text x="${x}" y="${y}" text-anchor="middle" ${sea ? '' : `data-gu="${esc(l.n)}"`}
+        font-size="${sea ? 16 : 18}" font-weight="${sea ? 400 : 600}" letter-spacing="${sea ? 4 : 0}"
+        fill="${sea ? '#7b8d99' : (S.gu === l.n ? '#1a7fd4' : '#2f3b47')}" stroke="#fff" stroke-width="${sea ? 3 : 4}"
+        paint-order="stroke" stroke-linejoin="round" opacity="${sea ? .85 : 1}"
+        >${esc(l.n)}${sea ? '' : ''}<title>${esc(l.n)}의 장소 보기</title></text>`;
+    });
+  } else {
+    const poly = pts => pts.map(([lng, lat]) => px({ lng, lat }).join(',')).join(' ');
+    g += `<rect width="${rc.width}" height="${rc.height}" fill="#cfdde3"/>`;
+    g += `<polygon points="${poly(R.land)}" fill="#ffffff" stroke="#b6c4ce" stroke-width="1.5"/>`;
+    (R.islands || []).forEach(i => g += `<polygon points="${poly(i)}" fill="#ffffff" stroke="#b6c4ce" stroke-width="1.5"/>`);
+    (R.labels || []).forEach(l => { const [x, y] = px(l); g += `<text x="${x}" y="${y}" font-size="13" text-anchor="middle" fill="#7b8d99" letter-spacing="2">${l.n}</text>`; });
+  }
+
+  // 밝은 실제 지도 위에서는 글자를 어둡게 + 흰 테두리로 띄운다
+  const light = !!R.mapImage;
+  const ink = light ? '#12202e' : '#2f3b47', halo = light ? '#fff' : '#fff';
+  const lbl = (x, y, t, size, weight) =>
+    `<text x="${x}" y="${y}" font-size="${size}" font-weight="${weight || 500}" text-anchor="middle"
+       fill="${ink}" stroke="${halo}" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${t}</text>`;
+
+  const order = new Map();
+  S.plan.forEach((e, i) => { if (!order.has(e.id)) order.set(e.id, i + 1); });
+
+  // 원 크기 — 일정에 담긴 곳은 더 크게. 겹치면 서로 밀어내 자리를 잡는다.
+  const R_ON = 18, R_OFF = 13;
+  const radiusOf = p => order.has(p.id) ? R_ON : R_OFF;
+  const shown = R.pois.filter(p => S.tab === 'all' || p.type === S.tab || order.has(p.id));
+  PIN.clear();
+  const laid = layoutPins(shown, radiusOf);
+  laid.forEach(o => PIN.set(o.p.id, [o.x, o.y]));
+  const at = p => PIN.get(p.id) || px(p);
+
+  // 경로 — 밀려난 뒤의 핀 위치를 이어야 선과 원이 맞는다
+  const home = startPoint(S);
+  if (S.plan.length) {
+    const pts = [px(home), ...S.plan.map(e => at(poi(e.id)))];
+    const line = `points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke-dasharray="7 5"`;
+    if (light) g += `<polyline ${line} stroke="#fff" stroke-width="6" opacity=".9"/>`;
+    g += `<polyline ${line} stroke="#1d6fd0" stroke-width="2.5" opacity=".95"/>`;
+  }
+  // 시작지점 후보들: 선택된 곳만 강조
+  R.starts.forEach(s => {
+    const [x, y] = px(s), on = s.id === home.id;
+    g += `<g data-start="${s.id}" style="cursor:pointer">
+      <title>${esc(s.name)} (${s.note})</title>
+      <rect x="${x + (on ? -8 : -5)}" y="${y + (on ? -8 : -5)}" width="${on ? 16 : 10}" height="${on ? 16 : 10}"
+        fill="${on ? '#e5484d' : '#8fa3b3'}" stroke="${halo}" stroke-width="2.5" transform="rotate(45 ${x} ${y})"/>
+      ${on ? lbl(x, y - 16, esc(s.name), 14, 700) : ''}
+    </g>`;
+  });
+
+  // 이름표 겹침 방지: 이미 놓인 이름표와 부딪히면 아래로 밀고, 그래도 안 되면 이름을 숨긴다.
+  // 일정에 담긴 곳은 항상 보여야 하므로 먼저 자리를 잡는다.
+  const FS = 13;                                    // 이름표 글자 크기(화면 px)
+  const placed = [];
+  const place = (x, y, name, base) => {
+    const w = name.length * FS + 10, h = FS + 3;    // 화면 픽셀 기준 대략적인 글상자
+    let sy = y + base;
+    for (let i = 0; i < 5; i++) {
+      if (!placed.some(b => Math.abs(b.x - x) < (b.w + w) / 2 && Math.abs(b.y - sy) < h)) {
+        placed.push({ x, y: sy, w }); return sy;
+      }
+      sy += h + 2;
+    }
+    return null;                                    // 다섯 번 밀어도 자리가 없으면 포기
+  };
+
+  // 구 이름이 이미 차지한 자리를 먼저 등록해 두면 장소 이름표가 그 위에 겹치지 않는다
+  (R.mapImage ? R.mapImage.labels || [] : []).forEach(l => {
+    const [x, y] = px(l), fs = l.kind === 'sea' ? 16 : 18;
+    placed.push({ x, y, w: l.n.length * fs + 10 });
+  });
+
+  // 핀과 이름표를 나눠 그린다 — 한 그룹에 같이 두면 나중에 그려진 핀이 앞 이름표를 덮는다
+  let pins = '', names = '';
+  [...shown].sort((a, b) => (order.has(b.id) ? 1 : 0) - (order.has(a.id) ? 1 : 0)).forEach(p => {
+    const [x, y] = at(p), n = order.get(p.id), r = radiusOf(p);
+    const shut = isClosedToday(p);   // 그날 휴무면 색을 빼서 눈에 안 띄게
+    const col = shut ? '#9aa7b4' : { sight: '#1a7fd4', food: '#d9660a', stay: '#8b52e0' }[p.type];
+    const tag = `data-poi="${p.id}" style="cursor:pointer" opacity="${shut ? .45 : 1}"`;
+    const sel = S.pop === p.id;
+
+    const isz = r * 1.15;                        // 원 안에 들어갈 아이콘 크기
+    pins += `<g ${tag} class="pin${sel ? ' sel' : ''}">
+      <title>${esc(p.name)} — ${p.type === 'sight' ? SUBT(p).name : p.type === 'food' ? FOODT(p).name : TIER_NAME[p.tier]}</title>
+      ${sel ? `<circle class="ring" cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${col}" stroke-width="3"/>` : ''}
+      <circle class="dot" cx="${x}" cy="${y}" r="${r}" fill="${col}" stroke="${halo}" stroke-width="3"/>
+      <use href="#i-${pinIcon(p)}" x="${x - isz / 2}" y="${y - isz / 2}" width="${isz}" height="${isz}"
+           fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+      ${n ? `<circle cx="${x + r * .78}" cy="${y - r * .78}" r="8.5" fill="#fff" stroke="${col}" stroke-width="2"/>
+             <text x="${x + r * .78}" y="${y - r * .78 + 3.6}" font-size="11" font-weight="700" fill="${col}"
+                   text-anchor="middle" pointer-events="none">${n}</text>` : ''}
+    </g>`;
+
+    const ly = (n || S.tab !== 'all') ? place(x, y, p.name, r + 16) : null;
+    if (ly !== null) names += `<g ${tag}>${lbl(x, ly, esc(p.name), FS, n ? 700 : 500)}</g>`;
+  });
+  g += pins + names;
+  svg.innerHTML = g;
+}
+
+// 귀가 교통수단 선택 -------------------------------------------
+function openReturn() {
+  const q = S.quest; if (!q || !S.plan.length) return;
+  const res = compute(S), last = res.rows[res.rows.length - 1];
+  const from = last.poi, home = startPoint(S), ban = q.banModes || [];
+  const depart = last.end, wknd = isWeekend(dowOf(q, q.days - 1));
+  closePoi();
+  $('#movehd').innerHTML = `${ic('flag')} ${esc(home.name)} 으로 돌아가기`;
+  $('#movesub').textContent = `${from.name} → ${home.name} · ${hhmm(depart)} 출발 · 마지막 일정`;
+  $('#moveopts').innerHTML = Object.entries(TRANSPORT).map(([k, t]) => {
+    const banned = ban.includes(k);
+    const leg = travel(from, home, k, q.people, depart, wknd);
+    let fare = leg.cost;
+    if (hasBuff('taxicoupon') && k === 'taxi') fare = Math.max(0, fare - 4800 * Math.ceil(q.people / 4));
+    return `<div class="card ${banned ? 'lock' : ''} ${S.ret && S.ret.mode === k ? 'on' : ''}" ${banned ? '' : `data-ret="${k}"`}>
+      <div class="t">${ic(t.ico, 'big')} ${t.name}${banned ? ' — 이 의뢰는 이용 불가' : ''}</div>
+      <div class="s" style="margin-top:4px">${leg.min}분${leg.rush ? ` <b style="color:var(--warn)">(정체 +${leg.min - leg.base}분)</b>` : ''} · ${won(fare)} · ${hhmm(depart + leg.min)} 도착</div>
+    </div>`;
+  }).join('');
+  $('#move').showModal();
+}
+
+// 구간 교통수단 선택 ------------------------------------------
+// 넣을 자리 바로 앞 장소에서 이 장소까지의 실제 소요·요금·체력을 비교해 고른다.
+function openMove(id) {
+  const q = S.quest; if (!q) return;
+  const p = poi(id), i = insertAtDay(S.day);
+  const from = i > 0 ? poi(S.plan[i - 1].id) : startPoint(S);
+  const ban = q.banModes || [];
+  // 앞 일정이 끝나는 시각에 출발한다 — 그래야 출퇴근 정체가 제대로 반영된다
+  const rows = compute(S).rows, pr = i > 0 ? rows[i - 1] : null;
+  const depart = pr && pr.poi.type !== 'stay' ? pr.end : wakeOf(S.day);
+  closePoi();
+
+  $('#movehd').innerHTML = `${ic('arrow-right')} ${esc(p.name)} 까지 무엇을 타고 갈까요?`;
+  $('#movesub').textContent = `${from.name} → ${p.name} · ${hhmm(depart)} 출발 · ${S.day + 1}일차 ${i + 1}번째 일정`;
+  $('#moveopts').innerHTML = Object.entries(TRANSPORT).map(([k, t]) => {
+    const banned = ban.includes(k);
+    const leg = travel(from, p, k, q.people, depart);
+    let fare = leg.cost;
+    if (hasBuff('taxicoupon') && k === 'taxi') fare = Math.max(0, fare - 4800 * Math.ceil(q.people / 4));
+    const st = drain(DRAIN_MOVE[k], 0, leg.min, q.staminaType, true, hasBuff);
+    return `<div class="card ${banned ? 'lock' : ''}" ${banned ? '' : `data-move="${k}" data-poi2="${id}"`}>
+      <div class="t">${ic(t.ico, 'big')} ${t.name}${banned ? ' — 이 의뢰는 이용 불가' : ''}</div>
+      <div class="s" style="margin-top:4px">${leg.min}분${leg.rush ? ` <b style="color:var(--warn)">(정체 +${leg.min - leg.base}분)</b>` : ''} · ${leg.km.toFixed(1)}km · ${won(fare)}${k === 'car' ? ' + 일 대여료' : ''}</div>
+      <div class="s">체력 -${st.toFixed(1)}</div>
+    </div>`;
+  }).join('');
+  $('#move').showModal();
+}
+
+// 도착 교통편 선택 ------------------------------------------
+function openTrip() {
+  const q = S.quest; if (!q) return;
+  const opts = REGIONS[S.region].origins[q.from] || [];
+  const starts = REGIONS[S.region].starts;
+  $('#triphd').innerHTML = `${ic('map-pin')} ${esc(q.from)}에서 부산까지, 무엇을 타고 올까요?`;
+  $('#tripopts').innerHTML = opts.map(o => {
+    const to = starts.find(x => x.id === o.to);
+    const total = o.cost * (o.per === 'car' ? Math.ceil(q.people / 4) : q.people);
+    const share = Math.round(total / q.budget * 100);
+    return `<div class="card ${o.id === (arrival(S) || {}).id ? 'on' : ''}" data-trip="${o.id}">
+      <div class="t">${ic(o.ico, 'big')} ${esc(o.name)}</div>
+      <div class="s" style="margin-top:5px">
+        ${esc(to.name)} ${hhmm(o.arrive)} 도착 · 소요 ${Math.floor(o.min / 60)}시간 ${o.min % 60}분</div>
+      <div class="s">${won(total)} · 예산의 ${share}%${o.per === 'car' ? ' · 여행 중 렌터카비 없음' : ` (${won(o.cost)} × ${q.people}인)`}</div>
+    </div>`;
+  }).join('');
+  $('#trip').showModal();
+}
+
+// 손님 반응 ---------------------------------------------------
+// 장소를 넣을 때마다 손님이 한마디 한다. 상황(선호·체력·예산)에 맞춰 고른다.
+const LINES = {
+  fav:    ['여기 꼭 가보고 싶었어요!', '오, 딱 제 취향이에요', '이런 곳 좋아해요'],
+  tired:  ['조금 쉬었다 가면 안 될까요…', '다리가 좀 아픈데요', '오늘 무리하는 것 같아요'],
+  broke:  ['돈이 꽤 나가는데 괜찮을까요?', '예산이 슬슬 걱정돼요'],
+  meal:   ['배고팠어요!', '맛있겠다', '여기 유명한 데죠?'],
+  cafe:   ['커피 한 잔 좋죠', '잠깐 앉았다 가요'],
+  stay:   ['오늘은 여기서 묵는군요', '짐 좀 풀고 싶었어요'],
+  ok:     ['좋아요', '괜찮네요', '네, 넣어주세요']
+};
+const pick = a => a[Math.floor(Math.random() * a.length)];
+// 화면 위쪽에 잠깐 떴다 사라지는 토스트. 연달아 넣으면 아래로 쌓인다.
+function say(mood) {
+  const q = S.quest; if (!q) return;
+  const el = document.createElement('div');
+  el.className = 'toast ' + mood;
+  el.innerHTML = `${ic(AT(q).ico || 'heart')}<span>${esc(pick(LINES[mood] || LINES.ok))}</span>`;
+  const box = $('#toasts');
+  box.appendChild(el);
+  while (box.children.length > 3) box.firstChild.remove();      // 너무 쌓이지 않게
+  el.addEventListener('animationend', e => { if (e.animationName === 'toastout') el.remove(); });
+}
+
+// 넣은 장소와 그 시점의 상태를 보고 반응을 정한다
+function reactTo(p, res) {
+  const st = res.dayStat[S.day];
+  if (st && st.low < st.cap * .25) return 'tired';
+  if (S.quest && res.spend > S.quest.budget * .85) return 'broke';
+  if (likesSub(S.quest, p)) return 'fav';
+  if (p.type === 'food') return p.sub === 'cafe' ? 'cafe' : 'meal';
+  if (p.type === 'stay') return 'stay';
+  return 'ok';
+}
+
+// 숫자가 바뀌면 굴러가며 색으로 방향을 알린다
+const PREV = {};
+function countTo(el, key, to, fmt, goodIsDown) {
+  const from = PREV[key];
+  PREV[key] = to;
+  el.textContent = fmt(to);          // 값은 항상 먼저 확정 — 프레임이 안 돌아도 숫자는 맞다
+  if (from == null || from === to || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const worse = goodIsDown ? to > from : to < from;
+  el.classList.add(worse ? 'worse' : 'better');
+  const t0 = performance.now();
+  const step = now => {
+    const k = Math.min(1, (now - t0) / 420), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = fmt(Math.round(from + (to - from) * e));
+    if (k < 1) requestAnimationFrame(step);
+    else setTimeout(() => el.classList.remove('worse', 'better'), 320);
+  };
+  requestAnimationFrame(step);
+}
+
+// 지도 위 장소 상세 팝업 --------------------------------------
+function closePoi() { const had = S.pop; S.pop = null; $('#poipop').hidden = true; if (had) renderMap(); }
+
+// 핀 자리에서 위로 떠오르며 사라지는 피드백
+function flyUp(id, text) {
+  const [x, y] = PIN.get(id) || [0, 0], r = $('#mapwrap').getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'fx';
+  el.textContent = text;
+  el.style.left = (r.left + x) + 'px';
+  el.style.top = (r.top + y - 18) + 'px';
+  document.body.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+
+// 구 이름을 누르면 그 구의 장소 목록 (좌측 탭 아래)
+function renderGuList() {
+  const box = $('#gulist');
+  if (!S.gu) { box.hidden = true; return; }
+  const list = REGIONS[S.region].pois.filter(p => p.gu === S.gu);
+  const count = {};
+  S.plan.forEach(e => count[e.id] = (count[e.id] || 0) + 1);
+  const ICON = { sight: 'camera', food: 'utensils', stay: 'bed-double' };
+
+  box.hidden = false;
+  box.innerHTML = `<div class="guhd">
+      <b>${esc(S.gu)}</b><span class="s">${list.length}곳</span>
+      <span class="x" data-act="closegu">${ic("x")}</span>
+    </div>
+    <div class="gubody">${list.length ? ['sight', 'food', 'stay'].map(t => {
+      const rows = list.filter(p => p.type === t);
+      if (!rows.length) return '';
+      return rows.map(p => {
+        const n = count[p.id] || 0;
+        const fav = likesSub(S.quest, p);
+        return `<div class="gurow" data-poi="${p.id}">
+          <span class="${fav ? 'fav' : ''}">${ic(p.type === 'sight' ? SUBT(p).ico : p.type === 'food' ? FOODT(p).ico : ICON[t])}</span>
+          <span class="gnm">${esc(p.name)}${n ? ` <b style="color:var(--acc)">×${n}</b>` : ''}</span>
+          <span class="s">${isClosedToday(p) ? '<b style="color:var(--bad)">휴무</b>' : (p.cost ? (p.cost / 10000).toFixed(p.cost % 10000 ? 1 : 0) + '만' : '무료')}</span>
+        </div>`;
+      }).join('');
+    }).join('') : '<div class="s" style="padding:10px;text-align:center">등록된 장소가 없습니다</div>'}</div>`;
+}
+
+function openPoi(id) {
+  const p = poi(id), pop = $('#poipop');
+  const n = S.plan.filter(e => e.id === id).length;
+  const must = S.quest && S.quest.must.includes(id);
+  S.pop = id;
+
+  const meta = p.type === 'stay'
+    ? `${ic('hotel')} ${TIER_NAME[p.tier]}<br>${ic('wallet')} ${won(p.cost)} / 1박(2인실)<br>${ic('clock')} 체크인 ${hhmm(p.open[0])} 이후`
+    : `${p.type === 'food' ? ic(FOODT(p).ico) + ' ' + FOODT(p).name + (p.sub === 'cafe' ? ' <span style="color:var(--dim)">· 체력 회복 절반</span>' : '') : ic(SUBT(p).ico) + ' ' + SUBT(p).name + (likesSub(S.quest, p) ? ' <b style="color:var(--ok)">· 선호 +3</b>' : '')}<br>${ic('wallet')} ${p.cost ? won(p.cost) + ' / 1인' : '무료'}
+       <br>${ic('timer')} 권장 체류 ${p.stay}분<br>${ic('clock')} ${hhmm(p.open[0])} ~ ${hhmm(p.open[1])}`;
+
+  pop.innerHTML = `<div class="hd">
+      <h4>${must ? ic("star") + " " : ""}${esc(p.name)}</h4>
+      <span class="x" data-act="closepop" style="margin:0">${ic("x")}</span>
+    </div>
+    <div class="kv">${meta}${p.closed ? `<br>${ic('calendar-days')} 매주 ${p.closed.map(d => REGIONS[S.region].dayNames[d]).join('·')}요일 휴무` : ''}${p.type === 'stay' ? `<br>${ic('calendar-days')} 금·토 체크인은 40% 할증` : ''}<br>${ic("smile")} 만족도 ${p.joy}${n ? `<br><b style="color:var(--acc)">일정에 ${n}회 포함됨</b>` : ''}</div>
+    ${isClosedToday(p)
+      ? `<div class="kv" style="color:var(--bad)">${ic('triangle-alert')} ${S.day + 1}일차(${REGIONS[S.region].dayNames[dowOf(S.quest, S.day)]})에는 쉽니다</div>
+         <button class="go" data-add="${id}" style="background:var(--panel2);color:var(--dim)">그래도 추가</button>`
+      : `<button class="go" data-add="${id}">${ic('plus')} 일정에 추가</button>`}`;
+
+  // 핀 옆에 띄우되 화면 밖으로 나가지 않게 잡아둔다
+  // 겹침을 푼 뒤의 실제 핀 자리에 붙인다 (px() 는 밀려나기 전 위치라 어긋난다)
+  const r = $('#mapwrap').getBoundingClientRect(), [mx, my] = PIN.get(id) || px(p);
+  const sx = r.left + mx, sy = r.top + my - (S.plan.some(e => e.id === id) ? 16 : 11);
+  pop.hidden = false;
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, sx - w / 2)) + 'px';
+  pop.style.top = Math.max(56, Math.min(innerHeight - h - 8, sy - h - 16)) + 'px';
+}
+
+// 일정표: 시간 비례 타임라인 -----------------------------------
+let justAdded = false;     // 방금 담긴 블록에만 등장 연출을 준다
+const PPM = 0.85;          // 1분당 픽셀. 90분 체류 = 77px
+const MINBLK = 16;         // 너무 짧아 안 보이는 블록의 최소 높이
+
+function renderPlan(res) {
+  const box = $('#plan');
+  if (!S.quest) { box.innerHTML = `<div class="empty">왼쪽에서 의뢰를 먼저 선택하세요.</div>`; $('#edit').innerHTML = ''; return; }
+
+  const arr = arrival(S);
+  // 일차 탭 — 여러 날을 세로로 이어붙이면 스크롤이 길어져서 하루씩 본다
+  const days = S.quest.days;
+  if (S.day >= days) S.day = days - 1;
+  $('#daytabs').innerHTML = days < 2 ? '' : Array.from({ length: days }, (_, d) => {
+    const rows = res.rows.filter(r => r.day === d);
+    const bad = rows.some(r => r.errs.length);
+    return `<button data-day="${d}" class="${d === S.day ? 'on' : ''}">
+      ${d + 1}일차<span class="dw">${dowName(REGIONS[S.region], dowOf(S.quest, d))}</span>${rows.length ? ` <b>${rows.length}</b>` : ''}${bad ? ic("triangle-alert") : ""}</button>`;
+  }).join('');
+
+  // 그날의 체력 상태와 기상 시각 — 타임라인 바로 위에 함께 둔다
+  const st = res.dayStat[S.day];
+  const T = REGIONS[S.region].staminaTypes[res.type];
+  $('#stambar').innerHTML = st ? `<div class="stam">
+      <div class="bar"><i style="width:${Math.min(100, Math.max(0, st.low) / st.cap * 100)}%" class="${st.low < 0 ? 'out' : st.low < st.cap * .25 ? 'low' : ''}"></i></div>
+      <span class="s" title="${esc(T.desc)}">${ic(T.ico)} 체력 ${Math.round(st.cap)} → 최저 ${Math.round(st.low)}${st.cap < res.full ? ` · 한계 ${res.full}에서 -${Math.round(res.full - st.cap)}` : ''}</span>
+    </div>
+    <div class="wakerow">${S.day === 0
+      ? `<span class="s">${ic(arr ? arr.ico : 'map-pin')} ${hhmm(wakeOf(0))} 부산 도착 · 1일차 시작</span>`
+      : `<span class="s">${ic('sunrise')} 기상</span>
+         <select data-wake="${S.day}">${[...Array(15)].map((_, i) => {
+           const m = 300 + i * 30;
+           return `<option value="${m}" ${m === wakeOf(S.day) ? 'selected' : ''}>${hhmm(m)}</option>`;
+         }).join('')}</select>
+         `}
+    </div>
+    ${st.sleep != null ? `<div class="s sleepnote">수면 ${Math.floor(st.sleep / 60)}시간 ${st.sleep % 60}분</div>` : ''}` : '';
+
+  let html = '';
+  for (let d = S.day; d === S.day; d++) {
+    const rows = res.rows.filter(r => r.day === d);
+    // 하루가 시작되는 시각 — 1일차는 부산 도착 시각, 이후는 아침. compute() 와 같아야 한다.
+    const t0 = d === 0 ? wakeOf(0) : d * 1440 + wakeOf(d);
+    // 1일차는 집에서 출발하는 시각까지 거슬러 올라가 그린다
+    const top = (d === 0 && arr) ? t0 - arr.min : t0;
+    const t1 = (d + 1) * 1440 + 300;              // 다음날 새벽 5시까지 항상 그린다
+    const y = t => (t - top) * PPM;
+    const last = rows.length ? Math.max(...rows.map(r => r.end)) : t0;
+
+    html += `<div class="dayhd">${hhmm(top)} ~ ${hhmm(last)} · ${rows.length}곳</div>
+      <div class="tl" style="height:${y(t1)}px">`;
+
+    // 손님이 사는 곳에서 출발하는 것부터가 일정이다
+    if (d === 0 && arr) html += blk('arrive', 0, arr.min, -1,
+      `${ic(arr.ico)} ${esc(S.quest.from)} 출발`, `${arr.name} · ${won(arrivalCost(S))}`,
+      `${S.quest.from} → ${startPoint(S).name} (${arr.name}) ${hhmm(arr.arrive)} 도착`);
+    if (!rows.length) html += `<div class="tlhint" style="top:${y(t0) + 16}px">지도에서 장소를 골라 이 날에 추가하세요</div>`;
+
+    // 시각 눈금 (정시는 실선+라벨, 30분은 점선)
+    for (let t = Math.ceil(top / 30) * 30; t <= t1; t += 30) {
+      const on = t % 60 === 0, mn = t % 1440 === 0;
+      html += `<div class="hr ${mn ? 'mn' : on ? '' : 'mid'}" style="top:${y(t)}px">${on ? `<b>${hhmm(t)}</b>` : ''}</div>`;
+    }
+
+    // 마지막 날 끝에 귀가 구간
+    if (res.back && res.back.day === d) {
+      const bk = res.back, bt = TRANSPORT[bk.mode];
+      html += blk('arrive', y(bk.begin), bk.leg.min, -2,
+        `${ic(bt.ico)} ${esc(bk.name)} 귀가`, `${bt.name} · ${bk.leg.min}분 · ${won(bk.leg.cost)}`,
+        `${bk.name} ${hhmm(bk.end)} 도착`);
+    }
+    rows.forEach(r => {
+      const depart = r.arrive - r.leg.min;
+      const t = TRANSPORT[r.mode];
+      // 이동·대기는 왼쪽 트랙, 장소는 오른쪽 트랙 — 짧아도 서로 안 가린다
+      html += blk('move lane' + (r.leg.rush ? ' rush' : ''), y(depart), r.leg.min, r.i,
+        `${ic(t.ico)} ${r.leg.min}분`, '',
+        `${t.name} ${r.leg.km.toFixed(1)}km · ${r.leg.min}분${r.leg.rush ? ` (정체 +${r.leg.min - r.leg.base}분)` : ''} · ${won(r.leg.cost)}`);
+      if (r.wait > 0) html += blk('wait lane', y(r.arrive), r.wait, r.i, `${ic("hourglass")}${r.wait}분`, '',
+        `영업 시작까지 대기 ${r.wait}분`);
+      // 체류 (숙소는 길이가 0이라 취침 표시로 대체)
+      const isStay = r.poi.type === 'stay';
+      html += blk(r.poi.type + (r.errs.length ? ' err' : '') + (S.sel === r.i ? ' on' : '') + (justAdded && S.sel === r.i ? ' new' : ''),
+        y(r.begin), isStay ? MINBLK / PPM : r.stay, r.i,
+        `<span class="nm">${isStay ? ic('bed-double') + ' ' : ''}${esc(r.poi.name)}</span>`,
+        isStay ? '취침 · 다음날 아침 출발' : `${hhmm(r.begin)}–${hhmm(r.end)} · ${r.stay}분`,
+        `${r.poi.name} ${hhmm(r.begin)}–${hhmm(r.end)}`);
+    });
+    html += `</div>`;
+  }
+  box.innerHTML = html;
+  renderEdit(res);
+}
+
+// 블록 하나. 짧아도 최소 높이는 주되, 시간 비례가 원칙.
+function blk(cls, top, mins, i, line1, line2, tip) {
+  const h = Math.max(MINBLK, mins * PPM);
+  const two = h >= 32 && line2;
+  return `<div class="blk ${cls}" data-sel="${i}" style="top:${top}px;height:${h}px" title="${esc(tip || '')}"
+    >${line1}${two ? `<br><span class="tm">${line2}</span>` : ''}</div>`;
+}
+
+// 선택한 블록의 편집 스트립. 짧은 블록 안에는 컨트롤이 안 들어가서 따로 뺐다.
+function renderEdit(res) {
+  const r = S.sel >= 0 ? res.rows.find(x => x.i === S.sel) : null;
+  if (!r) { $('#edit').innerHTML = `<span class="s">타임라인의 블록을 클릭하면 여기서 이동수단·체류시간을 바꿉니다.</span>`; return; }
+  const opts = Object.entries(TRANSPORT).map(([k, t]) =>
+    `<option value="${k}" ${r.mode === k ? 'selected' : ''}>${t.name}</option>`).join('');
+  $('#edit').innerHTML = `<div class="row">
+      <b>${esc(r.poi.name)}</b>
+      <span class="time">${hhmm(r.begin)}–${hhmm(r.end)}</span>
+      <span class="grow"></span>
+      <span class="mv" data-up="${r.i}">${ic("chevron-up")}</span><span class="mv" data-down="${r.i}">${ic("chevron-down")}</span>
+      <span class="x" data-del="${r.i}">${ic("x")}</span>
+    </div>
+    <div class="row" style="margin-top:5px">
+      <select data-mode="${r.i}">${opts}</select>
+      ${r.poi.type === 'stay' ? `<span class="s">${ic('bed-double')} 취침</span>`
+        : `<span class="s">체류</span><input type="number" data-stay="${r.i}" value="${r.stay}" min="10" max="600" step="5"><span class="s">분</span>`}
+      <span class="grow"></span><span class="s">${won(r.cost)}</span>
+    </div>`;
+}
+
+function renderSum(res) {
+  const q = S.quest;
+  if (!q) { $('#sum').innerHTML = `<div class="s">의뢰를 선택하면 예산·시간이 표시됩니다.</div>`; $('#warns').innerHTML = ''; return; }
+  const over = res.spend > q.budget;
+  $('#sum').innerHTML = `
+    <div class="stat"><span>총 경비 <span class="s">/ ${won(q.budget)}</span></span><b id="vSpend" class="${over ? 'over' : ''}"></b></div>
+    <div class="stat"><span>총 이동시간</span><b id="vMove"></b></div>
+    <div class="stat"><span>만족도 합계</span><b id="vJoy"></b></div>
+    <button class="go" id="submit" ${res.bad.length || !S.plan.length ? 'disabled' : ''}>${
+      !S.plan.length ? '일정을 먼저 짜세요'
+      : res.bad.length ? `제출 불가 · ${esc(res.bad[0])}${res.bad.length > 1 ? ` 외 ${res.bad.length - 1}건` : ''}`
+      : '의뢰 제출'}</button>`;
+  countTo($('#vSpend'), 'spend', res.spend, won, true);
+  countTo($('#vMove'), 'move', res.moveMin, m => `${Math.floor(m / 60)}시간 ${m % 60}분`, true);
+  countTo($('#vJoy'), 'joy', res.joy, String, false);
+  // 모든 조건을 막 채운 순간을 알린다
+  const okNow = !res.bad.length && S.plan.length > 0;
+  if (okNow && PREV.ok === false) { $('#submit').classList.add('ready'); say('fav'); }
+  PREV.ok = okNow;
+
+  // 미충족 조건은 의뢰 카드 바로 아래에 붙여야 무엇을 더 채워야 하는지 바로 보인다
+  $('#warns').innerHTML = !S.plan.length && !res.bad.length ? '' : `<div class="card warns">
+    <ul class="msgs">${res.bad.length ? res.bad.slice(0, 7).map(m => `<li>${ic("triangle-alert")} ${esc(m)}</li>`).join('')
+      : `<li class="ok">${ic('check')} 모든 조건 충족 — 제출 가능</li>`}</ul></div>`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 이벤트 (위임)
+// ─────────────────────────────────────────────────────────────
+// 방금 담긴(선택된) 블록이 타임라인 가운데로 오도록 스크롤한다.
+// 타임라인은 하루가 다음날 05시까지라 길어서, 안 옮기면 추가된 게 화면 밖에 있기 쉽다.
+function scrollToSel() {
+  const box = $('#plan'), el = box.querySelector('.blk.on');
+  if (!el) return;
+  const r = el.getBoundingClientRect(), b = box.getBoundingClientRect();
+  box.scrollTop = Math.max(0, box.scrollTop + (r.top - b.top) - (box.clientHeight - r.height) / 2);
+}
+
+// 지금 보고 있는 일차의 끝 위치. 하루는 숙소에서 끝나므로 d번째 숙소 앞에 넣는다.
+function insertAtDay(d) {
+  let seen = 0;
+  for (let i = 0; i < S.plan.length; i++) {
+    if (poi(S.plan[i].id).type === 'stay') { if (seen === d) return i; seen++; }
+  }
+  return S.plan.length;
+}
+
+// 클릭할 때마다 추가 (같은 호텔 연박, 시장 재방문 등이 필요하므로 토글이 아님). 제거는 일정표의 × 버튼.
+function addPoi(id, mode) {
+  const p = poi(id);
+  if (!S.quest) return;
+  const i = insertAtDay(S.day);      // 보고 있는 일차에 들어간다
+  S.plan.splice(i, 0, { id, mode: mode || 'bus', stay: p.stay });
+  S.sel = i;                         // 방금 넣은 걸 바로 편집할 수 있게
+  justAdded = true;
+  render();                    // 팝업은 열린 채로 갱신된다 (연박·재방문을 이어서 누를 수 있게)
+  justAdded = false;
+  scrollToSel();
+  say(reactTo(p, compute(S)));
+  flyUp(id, `${i + 1}번째 · 만족 +${p.joy}`);
+}
+
+document.addEventListener('click', ev => {
+  if (dragged) { dragged = false; return; }   // 지도를 끌고 놓은 것은 클릭이 아니다
+
+  // 버튼 안에 아이콘(<svg>)이 있으면 클릭 대상은 그 자식이 된다.
+  // 그래서 데이터 속성은 반드시 closest() 로 거슬러 올라가 찾는다.
+  const near = sel => ev.target.closest(sel);
+
+  const fold = near('[data-fold]');
+  if (fold) {
+    const p = $('#' + fold.dataset.fold), off = p.classList.toggle('hide');
+    fold.innerHTML = ic('chevron-' + (p.classList.contains('left') ? (off ? 'right' : 'left') : (off ? 'left' : 'right')));
+    return;
+  }
+
+  const bf = near('[data-buff]');
+  if (bf) { S.buffs.push(bf.dataset.buff); pendingPick = false; save(); $('#buff').close(); render(); return; }
+
+  const tr = near('[data-trip]');
+  if (tr) { S.arriveId = tr.dataset.trip; $('#trip').close(); render(); return; }
+
+  const q = near('[data-quest]');
+  if (q) {
+    const quest = REGIONS[S.region].quests.find(x => x.id === q.dataset.quest);
+    if (quest.lv <= level()) {
+      S.quest = quest; S.plan = []; S.sel = null; S.day = 0; S.arriveId = null; S.ret = null; S.wake = {}; S.pop = null;
+      $('#pick').close(); render(); openTrip();
+    }
+    return;
+  }
+
+  const act = near('[data-act]');
+  if (act) {
+    const a = act.dataset.act;
+    if (a === 'pick') $('#pick').showModal();
+    else if (a === 'trip') openTrip();
+    else if (a === 'closepop') closePoi();
+    else if (a === 'closegu') { S.gu = null; render(); }
+    return;
+  }
+
+  const add = near('[data-add]');
+  if (add) { openMove(add.dataset.add); return; }
+  const mv = near('[data-move]');
+  if (mv) { $('#move').close(); addPoi(mv.dataset.poi2, mv.dataset.move); return; }
+  const rt = near('[data-ret]');
+  if (rt) { S.ret = { mode: rt.dataset.ret }; $('#move').close(); render(); say('ok'); return; }
+
+  const gu = near('[data-gu]');
+  if (gu) { S.gu = S.gu === gu.dataset.gu ? null : gu.dataset.gu; render(); return; }
+
+  const st = near('[data-start]');
+  if (st) {
+    if (!S.quest) return;
+    // 마지막 날에 누르면 귀가 교통편, 그 외에는 올 때 교통편을 바꾼다
+    if (S.plan.length && S.day === S.quest.days - 1) openReturn(); else openTrip();
+    return;
+  }
+
+  const p = near('[data-poi]');
+  if (p) { openPoi(p.dataset.poi); return; }
+
+  // 일정표 편집
+  const del = near('[data-del]');
+  if (del) { S.plan.splice(+del.dataset.del, 1); S.sel = null; render(); return; }
+  const up = near('[data-up]');
+  if (up) { const i = +up.dataset.up; if (i > 0) { [S.plan[i - 1], S.plan[i]] = [S.plan[i], S.plan[i - 1]]; S.sel = i - 1; render(); scrollToSel(); } return; }
+  const dn = near('[data-down]');
+  if (dn) { const i = +dn.dataset.down; if (i < S.plan.length - 1) { [S.plan[i + 1], S.plan[i]] = [S.plan[i], S.plan[i + 1]]; S.sel = i + 1; render(); scrollToSel(); } return; }
+  const blk = near('[data-sel]');
+  if (blk) { S.sel = +blk.dataset.sel; render(); return; }
+  const day = near('[data-day]');
+  if (day) { S.day = +day.dataset.day; S.sel = null; render(); $('#plan').scrollTop = 0; return; }
+  const tab = near('[data-tab]');
+  if (tab) { S.tab = tab.dataset.tab; render(); return; }
+  if (near('#submit')) { submit(); return; }
+
+  // 위 어디에도 안 걸렸고 팝업 바깥이면 팝업을 닫는다
+  if (S.pop && !near('#poipop')) closePoi();
+});
+
+document.addEventListener('change', ev => {
+  const t = ev.target;
+  if (t.dataset.wake !== undefined) { S.wake[+t.dataset.wake] = +t.value; render(); }
+  else if (t.dataset.mode !== undefined) { S.plan[+t.dataset.mode].mode = t.value; render(); }
+  else if (t.dataset.stay !== undefined) { S.plan[+t.dataset.stay].stay = Math.max(10, +t.value || 10); render(); }
+});
+
+function submit() {
+  const res = compute(S), q = S.quest;
+  if (res.bad.length) return;
+  const st = stars(res.score, q.par);
+  const gained = st * 40 + 20, before = level();
+  S.xp += gained;
+  if (!S.cleared.includes(q.id)) S.cleared.push(q.id);
+  save();
+  const up = level() > before;
+  if (up) pendingPick = true;
+  $('#result').innerHTML = `
+    <h3>${st ? '의뢰 완료!' : '아쉽네요…'}</h3>
+    <div class="stars">${[0,1,2].map(i => ic("star", i < st ? "on" : "")).join("")}</div>
+    <div class="s">점수 <b style="color:var(--fg)">${res.score}</b> / 목표 ${q.par}</div>
+    <div class="s" style="margin-top:8px">경비 ${won(res.spend)} · 이동 ${res.moveMin}분 · 만족 ${res.joy}</div>
+    <div style="margin-top:10px;color:var(--ok)">+${gained} XP</div>
+    ${up ? `<div style="margin-top:6px;color:var(--acc);font-weight:700">${ic("party-popper")} 레벨 ${level()} 달성 — 새 장소·의뢰 해금!</div>` : ''}
+    <button class="go" id="rnext">다음 의뢰 고르기</button>
+    <button class="go" id="rstay" style="background:var(--panel2);color:var(--fg);margin-top:6px">이 의뢰 계속 다듬기</button>`;
+  $('#result').showModal();
+  $('#rnext').onclick = () => { $('#result').close(); render(); if (!offerBuff()) $('#pick').showModal(); };
+  $('#rstay').onclick = () => { $('#result').close(); render(); offerBuff(); };
+}
+
+// ── 지도 조작: 드래그 이동 / 휠 확대 ──────────────────────────
+let drag = null, dragged = false;
+const wrap = $('#mapwrap');
+
+wrap.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  drag = { x: e.clientX, y: e.clientY, tx: V.tx, ty: V.ty };
+  dragged = false;
+  wrap.classList.add('grabbing');
+});
+window.addEventListener('mousemove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (Math.abs(dx) + Math.abs(dy) > 4 && !dragged) { dragged = true; closePoi(); }
+  V.tx = drag.tx + dx; V.ty = drag.ty + dy; V.auto = false;
+  applyView();                                            // 이동은 재렌더 없이 transform 만
+});
+window.addEventListener('mouseup', () => { drag = null; wrap.classList.remove('grabbing'); });
+
+wrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = wrap.getBoundingClientRect();
+  zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015));
+}, { passive: false });
+
+const zoomCenter = f => { const r = wrap.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, f); };
+$('#zin').onclick = () => zoomCenter(1.35);
+$('#zout').onclick = () => zoomCenter(1 / 1.35);
+$('#zfit').onclick = fitView;
+addEventListener('resize', () => { if (V.auto) fitView(); });
+
+// 레벨업 보상 — 아직 없는 버프 중 2개를 뽑아 보여준다. 남은 게 없으면 건너뛴다.
+let pendingPick = false;
+function offerBuff() {
+  if (!pendingPick) return false;
+  const left = Object.keys(BUFFS).filter(b => !S.buffs.includes(b));
+  if (!left.length) { pendingPick = false; return false; }
+  const two = [];
+  while (two.length < Math.min(2, left.length)) {
+    const c = left[Math.floor(Math.random() * left.length)];
+    if (!two.includes(c)) two.push(c);
+  }
+  $('#buffopts').innerHTML = two.map(b => `<div class="card" data-buff="${b}">
+      <div class="t">${ic(BUFFS[b].ico, 'big')} ${esc(BUFFS[b].name)}</div>
+      <div class="s" style="margin-top:4px">${esc(BUFFS[b].desc)}</div>
+    </div>`).join('');
+  $('#buff').showModal();
+  return true;
+}
+
+// ── 시작 화면 ────────────────────────────────────────────────
+$('#pickclose').onclick = () => $('#pick').close();
+// 아직 의뢰를 안 골랐으면 Esc 로 닫지 못하게 (닫아봐야 할 게 없다)
+$('#pick').addEventListener('cancel', e => { if (!S.quest) e.preventDefault(); });
+$('#trip').addEventListener('cancel', e => { if (!S.arriveId) e.preventDefault(); });
+$('#buff').addEventListener('cancel', e => e.preventDefault());
+
+// 시작
+render();
+if (!S.quest) $('#pick').showModal();
+
+// ─────────────────────────────────────────────────────────────
+// 자체 점검:  index.html?test  로 열면 콘솔에 결과 출력
+// ─────────────────────────────────────────────────────────────
+if (location.search.includes('test')) {
+  const ok = (c, m) => console[c ? 'log' : 'error'](c ? '✔' : '✘ FAIL', m);
+  const R = REGIONS.busan, get = id => R.pois.find(p => p.id === id);
+  const home = R.starts[0];
+
+  // 부산역→해운대 실제 약 15km / 대중교통 40~50분
+  const d = km(home, get('haeundae')) * DETOUR;
+  ok(d > 12 && d < 20, `부산역→해운대 ${d.toFixed(1)}km (12~20 기대)`);
+  const tr = travel(home, get('haeundae'), 'bus', 2);
+  ok(tr.min > 35 && tr.min < 70, `대중교통 ${tr.min}분 (35~70 기대)`);
+  ok(travel(home, get('haeundae'), 'taxi', 2).min < tr.min, '택시가 대중교통보다 빠름');
+  ok(travel(home, get('haeundae'), 'taxi', 2).cost > tr.cost, '택시가 대중교통보다 비쌈');
+
+  // 도착 교통편이 시작지점을 정한다 (서울: KTX→부산역, 항공→김해공항)
+  const base = { region: 'busan', quest: R.quests[0], plan: [{ id: 'haeundae', mode: 'bus', stay: 90 }] };
+  const byKtx = compute({ ...base, arriveId: 'ktx' }), byAir = compute({ ...base, arriveId: 'air' });
+  ok(startPoint({ region: 'busan', quest: R.quests[0], arriveId: 'ktx' }).id === 'busanstn', 'KTX 는 부산역 도착');
+  ok(startPoint({ region: 'busan', quest: R.quests[0], arriveId: 'air' }).id === 'gimhae', '항공은 김해공항 도착');
+  ok(byAir.moveMin > byKtx.moveMin, `도착지 반영: 부산역 ${byKtx.moveMin}분 < 김해공항 ${byAir.moveMin}분`);
+
+  // 지하철은 버스보다 빠르고, 출퇴근 정체의 영향을 받지 않는다
+  const busLeg = travel(home, get('haeundae'), 'bus', 2, 600);
+  const subLeg = travel(home, get('haeundae'), 'subway', 2, 600);
+  ok(subLeg.min < busLeg.min, `지하철이 버스보다 빠름 (${subLeg.min}분 < ${busLeg.min}분)`);
+  const busRush = travel(home, get('haeundae'), 'bus', 2, 480);      // 08:00 출발
+  const busFree = travel(home, get('haeundae'), 'bus', 2, 840);      // 14:00 출발
+  ok(busRush.min > busFree.min, `출퇴근 시간 버스 지연 (${busFree.min}분 → ${busRush.min}분)`);
+  ok(travel(home, get('haeundae'), 'taxi', 2, 480).min > travel(home, get('haeundae'), 'taxi', 2, 840).min, '택시도 정체 영향');
+  ok(travel(home, get('haeundae'), 'subway', 2, 480).min === travel(home, get('haeundae'), 'subway', 2, 840).min, '지하철은 정체 영향 없음');
+  ok(Math.abs(busRush.min / busFree.base - 1.5) < .01, `정체 구간 전체에 걸치면 정확히 1.5배 (${(busRush.min / busFree.base).toFixed(2)})`);
+
+  // 카페는 식사보다 체력 회복이 적다
+  const eat = compute({ region: 'busan', quest: R.quests[0], arriveId: 'ktx', plan: [{ id: 'dwaeji', mode: 'bus', stay: 60 }] });
+  const sip = compute({ region: 'busan', quest: R.quests[0], arriveId: 'ktx', plan: [{ id: 'jeonpo', mode: 'bus', stay: 60 }] });
+  ok(eat.rows[0].dStay < sip.rows[0].dStay, `식사가 카페보다 체력 회복 큼 (${(-eat.rows[0].dStay).toFixed(1)} vs ${(-sip.rows[0].dStay).toFixed(1)})`);
+
+  // 초기 이동비가 경비에 포함된다 (서울 KTX 59,800 × 2인)
+  ok(byKtx.spend >= 119600, `초기 이동비 포함 (총 ${won(byKtx.spend)})`);
+  const byBus = compute({ ...base, arriveId: 'bus' });
+  ok(byBus.spend < byKtx.spend, '고속버스가 KTX 보다 쌈');
+  ok(byBus.rows[0].begin > byKtx.rows[0].begin, '싼 교통편은 늦게 도착해 일정이 늦게 시작');
+
+  // 자차로 오면 여행 중 렌터카 대여료가 붙지 않는다
+  const carPlan = { region: 'busan', quest: R.quests[0], plan: [{ id: 'haeundae', mode: 'car', stay: 90 }] };
+  const own = compute({ ...carPlan, arriveId: 'car' }), rent = compute({ ...carPlan, arriveId: 'ktx' });
+  ok(rent.spend - own.spend > 0 && !own.bad.some(m => m.includes('렌터카')), '자차 도착 시 렌터카 일 대여료 면제');
+
+  // 영업시간 위반 감지: 감천문화마을(~18:00 마감)에 23시 도착하도록 출발을 늦춤
+  const late = compute({ region: 'busan', quest: R.quests[1], plan: [{ id: 'jagalchi', mode: 'bus', stay: 700 }, { id: 'gamcheon', mode: 'bus', stay: 120 }] });
+  ok(late.bad.some(m => m.includes('영업')), '영업시간 위반 감지');
+
+  // 숙소를 지나면 다음날로 넘어감
+  const two = compute({
+    region: 'busan', quest: R.quests[0], startMin: 540,
+    plan: [{ id: 'haeundae', mode: 'bus', stay: 90 }, { id: 'gh_nampo', mode: 'bus', stay: 0 }, { id: 'jagalchi', mode: 'bus', stay: 60 }]
+  });
+  ok(two.rows[2].day === 1, `숙소 이후 2일차로 전환 (day=${two.rows[2].day})`);
+  ok(two.rows[2].begin >= 1440 + 540, '2일차는 아침 출발 시각부터 시작');
+
+  // 관광지 수 미달 감지 (haeundae, jagalchi 2곳 < minSights 3)
+  ok(two.bad.some(m => m.includes('관광지')), '관광지 수 미달 감지');
+  // 필수코스 누락 감지 (q1 필수는 해운대인데 안 넣음)
+  const miss = compute({ region: 'busan', quest: R.quests[0], startMin: 540, plan: [{ id: 'jagalchi', mode: 'bus', stay: 60 }] });
+  ok(miss.bad.some(m => m.includes('필수 코스 누락')), '필수코스 누락 감지');
+
+  // 예산 초과 감지
+  const rich = compute({
+    region: 'busan', quest: R.quests[2], startMin: 540,
+    plan: [{ id: 'yongkungsa', mode: 'taxi', stay: 90 }, { id: 'galbi', mode: 'taxi', stay: 90 }, { id: 'xthesky', mode: 'taxi', stay: 60 }]
+  });
+  ok(rich.spend > 0, `비용 계산됨 ${won(rich.spend)}`);
+  console.log('자체 점검 끝');
+}
+</script>
+</body>
+</html>
