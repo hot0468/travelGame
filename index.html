@@ -932,7 +932,7 @@ function renderMap() {
 
     const isz = r * 1.15;                        // 원 안에 들어갈 아이콘 크기
     pins += `<g ${tag} class="pin${sel ? ' sel' : ''}">
-      <title>${esc(p.name)} — ${p.type === 'sight' ? SUBT(p).name : p.type === 'food' ? FOODT(p).name : TIER_NAME[p.tier]}</title>
+      <title>${esc(p.name)} — ${p.type === 'sight' ? SUBT(p).name : p.type === 'food' ? FOODT(p).name : TIER_NAME[p.tier] + (p.star ? ' ' + p.star + '성' : '')}</title>
       ${sel ? `<circle class="ring" cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${col}" stroke-width="3"/>` : ''}
       <circle class="dot" cx="${x}" cy="${y}" r="${r}" fill="${col}" stroke="${halo}" stroke-width="3"/>
       <use href="#i-${pinIcon(p)}" x="${x - isz / 2}" y="${y - isz / 2}" width="${isz}" height="${isz}"
@@ -1125,7 +1125,7 @@ function openPoi(id) {
   S.pop = id;
 
   const meta = p.type === 'stay'
-    ? `${ic('hotel')} ${TIER_NAME[p.tier]}<br>${ic('wallet')} ${won(p.cost)} / 1박(2인실)<br>${ic('clock')} 체크인 ${hhmm(p.open[0])} 이후`
+    ? `${ic('hotel')} ${TIER_NAME[p.tier]}${p.star ? ' · ' + p.star + '성급' : ''}<br>${ic('wallet')} ${won(p.cost)} / 1박(2인실)<br>${ic('clock')} 체크인 ${hhmm(p.open[0])} 이후`
     : `${p.type === 'food' ? ic(FOODT(p).ico) + ' ' + FOODT(p).name + (p.sub === 'cafe' ? ' <span style="color:var(--dim)">· 체력 회복 절반</span>' : '') : ic(SUBT(p).ico) + ' ' + SUBT(p).name + (likesSub(S.quest, p) ? ' <b style="color:var(--ok)">· 선호 +3</b>' : '')}<br>${ic('wallet')} ${p.cost ? won(p.cost) + ' / 1인' : '무료'}
        <br>${ic('timer')} 권장 체류 ${p.stay}분<br>${ic('clock')} ${hhmm(p.open[0])} ~ ${hhmm(p.open[1])}`;
 

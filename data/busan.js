@@ -239,10 +239,38 @@ REGIONS.busan = {
     { id: 'motel_seomyeon', gu: '부산진구', name: '서면 모텔', type: 'stay', tier: 'motel', lat: 35.1580, lng: 129.0590, cost: 55000, stay: 0, joy: 5, open: [900, 1440] },
     { id: 'gh_yeongdo', gu: '영도구', name: '영도 흰여울 게스트하우스', type: 'stay', tier: 'guesthouse', lat: 35.0770, lng: 129.0450, cost: 28000, stay: 0, joy: 5, open: [900, 1440] },
     { id: 'res_haeundae', gu: '해운대구', name: '해운대 레지던스', type: 'stay', tier: 'motel', lat: 35.1620, lng: 129.1580, cost: 80000, stay: 0, joy: 6, open: [900, 1440] },
-    { id: 'hotel_gwangalli', gu: '수영구', name: '광안리 오션뷰 호텔', type: 'stay', tier: 'hotel', lat: 35.1525, lng: 129.1180, cost: 150000, stay: 0, joy: 8, open: [900, 1440] },
-    { id: 'hotel_seomyeon', gu: '부산진구', name: '서면 비즈니스 호텔', type: 'stay', tier: 'hotel', lat: 35.1565, lng: 129.0555, cost: 105000, stay: 0, joy: 7, open: [900, 1440] },
-    { id: 'hotel_songdo', gu: '서구', name: '송도 비치 호텔', type: 'stay', tier: 'hotel', lat: 35.0760, lng: 129.0190, cost: 110000, stay: 0, joy: 7, open: [900, 1440] },
-    { id: 'hotel_paradise', gu: '해운대구', name: '파라다이스 호텔 부산', type: 'stay', tier: 'hotel', lat: 35.1591, lng: 129.1634, cost: 320000, stay: 0, joy: 10, open: [900, 1440] }
+    { id: 'hotel_gwangalli', gu: '수영구', name: '광안리 오션뷰 호텔', type: 'stay', tier: 'hotel', star: 4, lat: 35.1525, lng: 129.1180, cost: 150000, stay: 0, joy: 8, open: [900, 1440] },
+    { id: 'hotel_seomyeon', gu: '부산진구', name: '서면 비즈니스 호텔', type: 'stay', tier: 'hotel', star: 4, lat: 35.1565, lng: 129.0555, cost: 105000, stay: 0, joy: 7, open: [900, 1440] },
+    { id: 'hotel_songdo', gu: '서구', name: '송도 비치 호텔', type: 'stay', tier: 'hotel', star: 4, lat: 35.0760, lng: 129.0190, cost: 110000, stay: 0, joy: 7, open: [900, 1440] },
+    { id: 'hotel_paradise', gu: '해운대구', name: '파라다이스 호텔 부산', type: 'stay', tier: 'hotel', star: 5, lat: 35.1591, lng: 129.1634, cost: 320000, stay: 0, joy: 10, open: [900, 1440] },
+    // 5성급
+    { id: 'signiel', gu: '해운대구', name: '시그니엘 부산', type: 'stay', tier: 'hotel', star: 5, lat: 35.1596, lng: 129.1685, cost: 450000, stay: 0, joy: 10, open: [900, 1440] },
+    { id: 'parkhyatt', gu: '해운대구', name: '파크 하얏트 부산', type: 'stay', tier: 'hotel', star: 5, lat: 35.1550, lng: 129.1430, cost: 400000, stay: 0, joy: 10, open: [900, 1440] },
+    { id: 'westin', gu: '해운대구', name: '웨스틴 조선 부산', type: 'stay', tier: 'hotel', star: 5, lat: 35.1543, lng: 129.1546, cost: 380000, stay: 0, joy: 10, open: [900, 1440] },
+    { id: 'grandjosun', gu: '해운대구', name: '그랜드 조선 부산', type: 'stay', tier: 'hotel', star: 5, lat: 35.1585, lng: 129.1615, cost: 350000, stay: 0, joy: 9, open: [900, 1440] },
+    { id: 'ananti', gu: '기장군', name: '아난티 힐튼 부산', type: 'stay', tier: 'hotel', star: 5, lat: 35.2005, lng: 129.2245, cost: 420000, stay: 0, joy: 10, open: [900, 1440] },
+    { id: 'lotte', gu: '부산진구', name: '롯데호텔 부산', type: 'stay', tier: 'hotel', star: 5, lat: 35.1568, lng: 129.0555, cost: 280000, stay: 0, joy: 9, open: [900, 1440] },
+    { id: 'avani', gu: '해운대구', name: '아바니 센트럴 부산', type: 'stay', tier: 'hotel', star: 5, lat: 35.1700, lng: 129.1290, cost: 260000, stay: 0, joy: 9, open: [900, 1440] },
+
+    // 4성급
+    { id: 'novotel', gu: '해운대구', name: '노보텔 앰배서더 부산', type: 'stay', tier: 'hotel', star: 4, lat: 35.1585, lng: 129.1600, cost: 220000, stay: 0, joy: 8, open: [900, 1440] },
+    { id: 'ibis', gu: '해운대구', name: '이비스 앰배서더 해운대', type: 'stay', tier: 'hotel', star: 4, lat: 35.1610, lng: 129.1630, cost: 150000, stay: 0, joy: 7, open: [900, 1440] },
+    { id: 'commodore', gu: '중구', name: '코모도 호텔 부산', type: 'stay', tier: 'hotel', star: 4, lat: 35.1090, lng: 129.0330, cost: 140000, stay: 0, joy: 7, open: [900, 1440] },
+    { id: 'astihotel', gu: '동구', name: '아스티 호텔 부산역', type: 'stay', tier: 'hotel', star: 4, lat: 35.1150, lng: 129.0420, cost: 160000, stay: 0, joy: 8, open: [900, 1440] },
+    { id: 'nongshim', gu: '동래구', name: '호텔 농심 (허심청)', type: 'stay', tier: 'hotel', star: 4, lat: 35.2185, lng: 129.0805, cost: 200000, stay: 0, joy: 9, open: [900, 1440] },
+    { id: 'crownharbor', gu: '중구', name: '크라운하버 호텔', type: 'stay', tier: 'hotel', star: 4, lat: 35.1055, lng: 129.0390, cost: 130000, stay: 0, joy: 7, open: [900, 1440] },
+    { id: 'lavalse', gu: '서구', name: '라발스 호텔', type: 'stay', tier: 'hotel', star: 4, lat: 35.0770, lng: 129.0200, cost: 150000, stay: 0, joy: 8, open: [900, 1440] },
+
+    // 모텔·레지던스
+    { id: 'res_gwangalli', gu: '수영구', name: '광안리 레지던스', type: 'stay', tier: 'motel', lat: 35.1520, lng: 129.1180, cost: 85000, stay: 0, joy: 6, open: [900, 1440] },
+    { id: 'motel_sasang', gu: '사상구', name: '사상터미널 모텔', type: 'stay', tier: 'motel', lat: 35.1620, lng: 128.9790, cost: 50000, stay: 0, joy: 5, open: [900, 1440] },
+    { id: 'motel_dongnae', gu: '동래구', name: '동래온천 모텔', type: 'stay', tier: 'motel', lat: 35.2170, lng: 129.0820, cost: 55000, stay: 0, joy: 5, open: [900, 1440] },
+    { id: 'pension_gijang', gu: '기장군', name: '기장 오션뷰 펜션', type: 'stay', tier: 'motel', lat: 35.2450, lng: 129.2230, cost: 90000, stay: 0, joy: 7, open: [900, 1440] },
+
+    // 게스트하우스
+    { id: 'gh_choryang', gu: '동구', name: '초량 게스트하우스', type: 'stay', tier: 'guesthouse', lat: 35.1150, lng: 129.0390, cost: 26000, stay: 0, joy: 4, open: [900, 1440] },
+    { id: 'gh_gwangalli', gu: '수영구', name: '광안리 게스트하우스', type: 'stay', tier: 'guesthouse', lat: 35.1535, lng: 129.1190, cost: 29000, stay: 0, joy: 5, open: [900, 1440] },
+    { id: 'gh_seomyeon', gu: '부산진구', name: '서면 게스트하우스', type: 'stay', tier: 'guesthouse', lat: 35.1560, lng: 129.0580, cost: 27000, stay: 0, joy: 4, open: [900, 1440] },
   ],
 
   quests: [
@@ -250,33 +278,33 @@ REGIONS.busan = {
       id: 'q1', lv: 1, title: '첫 손님 · 바다가 보고 싶어요',
       from: '서울', stamina: 110, staminaType: 'energizer', age: '20대', startDow: 4,
       desc: '서울에서 갑니다. 부산 처음이에요. 바다만 보면 돼요.',
-      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, par: 375
+      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, par: 345
     },
     {
       id: 'q2', lv: 1, title: '뚜벅이 커플 · 알뜰하게',
       from: '대구', stamina: 100, staminaType: 'morning', age: '30대', startDow: 5,
       desc: '대구에서 갑니다. 부산에선 대중교통만 탈게요. 감천이랑 자갈치는 꼭이요!',
       days: 2, budget: 240000, people: 2, must: ['gamcheon', 'jagalchi'], minSights: 4,
-      banModes: ['taxi', 'car'], par: 430
+      banModes: ['taxi', 'car'], par: 440
     },
     {
       id: 'q3', lv: 2, title: '당일치기 출장 뒤풀이',
       from: '대구', stamina: 95, staminaType: 'night', age: '40대', startDow: 2,
       desc: '대구에서 아침에 출발해 당일로 다녀옵니다. 용궁사는 꼭 보고 싶어요. 셋이서 갑니다.',
-      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, par: 270
+      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, par: 260
     },
     {
       id: 'q4', lv: 3, title: '부모님 효도여행',
       from: '광주', stamina: 75, staminaType: 'motionsick', age: '60대 이상', startDow: 1,
       desc: '광주에서 부모님 모시고 갑니다. 많이 걷긴 힘드세요. 숙소는 호텔로.',
       days: 3, budget: 1100000, people: 4, must: ['taejongdae', 'beomeosa'], minSights: 5,
-      minStayTier: 'hotel', par: 395
+      minStayTier: 'hotel', par: 375
     },
     {
       id: 'q5', lv: 4, title: '아이 둘 데리고 가는 가족',
       from: '제주', stamina: 90, staminaType: 'morning', age: '아이 동반', startDow: 4,
       desc: '제주에서 아이 둘 데리고 갑니다. 롯데월드는 필수! 이동은 편했으면 해요.',
-      days: 3, budget: 1200000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, par: 425
+      days: 3, budget: 1200000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, par: 490
     }
   ]
 };
