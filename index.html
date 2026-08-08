@@ -211,6 +211,10 @@
   .msgs li{color:var(--bad);margin-bottom:3px}
   .msgs li.ok{color:var(--ok)}
   button.go{width:100%;margin-top:8px;padding:9px;border:0;border-radius:7px;background:var(--acc);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+  button.go.alt{background:var(--panel2);color:var(--fg)}
+  button.go.alt:hover{background:var(--line)}
+  #ask{max-width:340px;text-align:left}
+  #ask .go{margin-top:0;flex:1}
   button.go:disabled{background:var(--panel2);color:#7d8a99;font-size:12px;font-weight:600;line-height:1.35;cursor:not-allowed}
   .dayhd{font-size:11px;color:var(--dim);letter-spacing:.06em;margin:2px 0 8px;border-bottom:1px solid var(--line);padding-bottom:4px}
   .daytabs{padding:8px 12px 0}
@@ -396,6 +400,15 @@
   <h3 id="movehd"></h3>
   <p class="s" style="margin:0 0 14px" id="movesub"></p>
   <div id="moveopts"></div>
+</dialog>
+
+<dialog id="ask">
+  <h3 id="askhd"></h3>
+  <p class="s" id="askmsg" style="margin:0"></p>
+  <div class="row" style="gap:8px;margin-top:16px">
+    <button class="go alt" id="askno">취소</button>
+    <button class="go" id="askyes">확인</button>
+  </div>
 </dialog>
 
 <dialog id="result"></dialog>
@@ -1138,8 +1151,15 @@ function openPoi(id) {
 
 // 일정표: 시간 비례 타임라인 -----------------------------------
 let justAdded = false;     // 방금 담긴 블록에만 등장 연출을 준다
-let resetArm = null;       // 비우기는 두 번 눌러야 실행된다
-let resetTimer = null;
+// 되돌릴 수 없는 동작은 딤 팝업으로 한 번 확인받는다
+let askCb = null;
+function ask(title, msg, yes, cb) {
+  $('#askhd').textContent = title;
+  $('#askmsg').textContent = msg;
+  $('#askyes').textContent = yes;
+  askCb = cb;
+  $('#ask').showModal();
+}
 
 // 그날의 장소만 비운다. 그날을 마감하는 숙소는 남겨 다음 일차가 밀리지 않게 한다.
 function resetDay(d) {
@@ -1187,7 +1207,7 @@ function renderPlan(res) {
          `}
       <span class="grow"></span>
       ${res.rows.some(r => r.day === S.day)
-        ? `<button class="mini danger" data-reset="${S.day}">${resetArm === S.day ? '정말?' : '비우기'}</button>`
+        ? `<button class="mini danger" data-reset="${S.day}">비우기</button>`
         : ''}
     </div>
     ${st.sleep != null ? `<div class="s sleepnote">수면 ${Math.floor(st.sleep / 60)}시간 ${st.sleep % 60}분</div>` : ''}` : '';
@@ -1411,15 +1431,16 @@ document.addEventListener('click', ev => {
   if (blk) { S.sel = +blk.dataset.sel; render(); return; }
   const rs = near('[data-reset]');
   if (rs) {
-    const d = +rs.dataset.reset;
-    clearTimeout(resetTimer);
-    if (resetArm === d) { resetArm = null; resetDay(d); }
-    else { resetArm = d; render(); resetTimer = setTimeout(() => { resetArm = null; render(); }, 3000); }
+    const d = +rs.dataset.reset, R2 = REGIONS[S.region];
+    const n = compute(S).rows.filter(r => r.day === d && r.poi.type !== 'stay').length;
+    ask(`${d + 1}일차(${R2.dayNames[dowOf(S.quest, d)]})를 비울까요?`,
+        `장소 ${n}곳이 지워집니다. 되돌릴 수 없어요. 그날을 마감하는 숙소는 남습니다.`,
+        '비우기', () => resetDay(d));
     return;
   }
 
   const day = near('[data-day]');
-  if (day) { S.day = +day.dataset.day; S.sel = null; resetArm = null; render(); $('#plan').scrollTop = 0; return; }
+  if (day) { S.day = +day.dataset.day; S.sel = null; render(); $('#plan').scrollTop = 0; return; }
   const tab = near('[data-tab]');
   if (tab) { S.tab = tab.dataset.tab; render(); return; }
   if (near('#submit')) { submit(); return; }
@@ -1510,6 +1531,10 @@ function offerBuff() {
 }
 
 // ── 시작 화면 ────────────────────────────────────────────────
+$('#askyes').onclick = () => { $('#ask').close(); const f = askCb; askCb = null; if (f) f(); };
+$('#askno').onclick = () => { $('#ask').close(); askCb = null; };
+$('#ask').addEventListener('cancel', () => { askCb = null; });
+
 $('#pickclose').onclick = () => $('#pick').close();
 // 아직 의뢰를 안 골랐으면 Esc 로 닫지 못하게 (닫아봐야 할 게 없다)
 $('#pick').addEventListener('cancel', e => { if (!S.quest) e.preventDefault(); });
