@@ -129,9 +129,11 @@
   .arrnote{margin-left:70px}
   .mini.wide{width:100%;margin-top:7px;padding:4px}
   .arrbar b{font-weight:700}
-  .mini{background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:5px;
+  .mini{white-space:nowrap;flex:0 0 auto;background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:5px;
         padding:2px 8px;font-size:11px;cursor:pointer;font-family:inherit}
   .mini:hover{border-color:var(--acc);color:var(--acc)}
+  .mini.danger{color:var(--bad);border-color:#e6c3c3}
+  .mini.danger:hover{border-color:var(--bad);color:var(--bad);background:#fff0f0}
   /* 집에서 부산까지 오는 구간 */
   .arrive{background:repeating-linear-gradient(45deg,#dce7f5,#dce7f5 6px,#eaf1fa 6px,#eaf1fa 12px);
           border:1px solid #9fb9d8;color:#274b73;z-index:1}
@@ -1136,6 +1138,20 @@ function openPoi(id) {
 
 // 일정표: 시간 비례 타임라인 -----------------------------------
 let justAdded = false;     // 방금 담긴 블록에만 등장 연출을 준다
+let resetArm = null;       // 비우기는 두 번 눌러야 실행된다
+let resetTimer = null;
+
+// 그날의 장소만 비운다. 그날을 마감하는 숙소는 남겨 다음 일차가 밀리지 않게 한다.
+function resetDay(d) {
+  const rows = compute(S).rows.filter(r => r.day === d);
+  const keep = rows.length && rows[rows.length - 1].poi.type === 'stay' ? rows[rows.length - 1].i : -1;
+  const drop = new Set(rows.map(r => r.i).filter(i => i !== keep));
+  S.plan = S.plan.filter((_, i) => !drop.has(i));
+  S.sel = null; S.pop = null;
+  if (!S.plan.length) S.ret = null;
+  render();
+  $('#plan').scrollTop = 0;
+}
 const PPM = 0.85;          // 1분당 픽셀. 90분 체류 = 77px
 const MINBLK = 16;         // 너무 짧아 안 보이는 블록의 최소 높이
 
@@ -1169,6 +1185,10 @@ function renderPlan(res) {
            return `<option value="${m}" ${m === wakeOf(S.day) ? 'selected' : ''}>${hhmm(m)}</option>`;
          }).join('')}</select>
          `}
+      <span class="grow"></span>
+      ${res.rows.some(r => r.day === S.day)
+        ? `<button class="mini danger" data-reset="${S.day}">${resetArm === S.day ? '정말?' : '비우기'}</button>`
+        : ''}
     </div>
     ${st.sleep != null ? `<div class="s sleepnote">수면 ${Math.floor(st.sleep / 60)}시간 ${st.sleep % 60}분</div>` : ''}` : '';
 
@@ -1389,8 +1409,17 @@ document.addEventListener('click', ev => {
   if (dn) { const i = +dn.dataset.down; if (i < S.plan.length - 1) { [S.plan[i + 1], S.plan[i]] = [S.plan[i], S.plan[i + 1]]; S.sel = i + 1; render(); scrollToSel(); } return; }
   const blk = near('[data-sel]');
   if (blk) { S.sel = +blk.dataset.sel; render(); return; }
+  const rs = near('[data-reset]');
+  if (rs) {
+    const d = +rs.dataset.reset;
+    clearTimeout(resetTimer);
+    if (resetArm === d) { resetArm = null; resetDay(d); }
+    else { resetArm = d; render(); resetTimer = setTimeout(() => { resetArm = null; render(); }, 3000); }
+    return;
+  }
+
   const day = near('[data-day]');
-  if (day) { S.day = +day.dataset.day; S.sel = null; render(); $('#plan').scrollTop = 0; return; }
+  if (day) { S.day = +day.dataset.day; S.sel = null; resetArm = null; render(); $('#plan').scrollTop = 0; return; }
   const tab = near('[data-tab]');
   if (tab) { S.tab = tab.dataset.tab; render(); return; }
   if (near('#submit')) { submit(); return; }
