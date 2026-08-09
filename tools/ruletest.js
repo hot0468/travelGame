@@ -23,6 +23,26 @@ const plan1 = m => compute({ region: 'busan', quest: q, arriveId: 'ktx', buffs: 
 const dW = plan1('walk').rows[0].dMove, dB = plan1('bus').rows[0].dMove;   // dMove 는 양수 = 소모량
 ok(dW > dB, `도보가 체력을 가장 많이 깎음 (${dW.toFixed(1)} vs 버스 ${dB.toFixed(1)})`);
 
+// ── 접근 도보 보정(access) — 실측값에 맞는지
+{
+  const stn = R.starts[0], gc = poi('gamcheon');           // 부산역 → 감천문화마을
+  const near = (got, real, tol, m) => ok(Math.abs(got - real) <= tol, `${m}: ${got}분 (실측 ${real}분)`);
+  near(travel(stn, gc, 'bus', 2, 600, false).min, 46, 4, '부산역→감천 버스');
+  near(travel(stn, gc, 'subway', 2, 600, false).min, 37, 4, '부산역→감천 지하철');
+  ok(travel(stn, gc, 'subway', 2, 600, false).walkMin === TRANSPORT.subway.walk + gc.access,
+     `도보 시간에 접근 보정 포함 (${travel(stn, gc, 'subway', 2, 600, false).walkMin}분)`);
+  // 택시·렌터카는 문 앞까지 가므로 보정을 받지 않는다
+  const noAcc = { ...gc, access: 0 };
+  ok(travel(stn, gc, 'taxi', 2, 600, false).min === travel(stn, noAcc, 'taxi', 2, 600, false).min,
+     '택시는 접근 보정 없음');
+  ok(travel(stn, gc, 'bus', 2, 600, false).min > travel(stn, noAcc, 'bus', 2, 600, false).min,
+     '버스는 접근 보정 받음');
+  // 정체는 주행 구간만 늘린다 — 걷는 시간까지 1.5배가 되면 안 된다
+  const calm = travel(stn, gc, 'bus', 2, 600, false), rush = travel(stn, gc, 'bus', 2, 480, false);
+  ok(rush.min - calm.min <= Math.ceil(calm.km / TRANSPORT.bus.kmh * 60 * .5) + 1,
+     `정체 가산이 주행분에만 붙음 (+${rush.min - calm.min}분)`);
+}
+
 // ── 교통편별 도착 체력
 const byArr = id => compute({ region: 'busan', quest: q, arriveId: id, buffs: [], plan: [] }).dayStat[0].start;
 ok(byArr('ktx') > byArr('car'), `KTX 도착이 자차보다 체력 남음 (${byArr('ktx').toFixed(1)} vs ${byArr('car').toFixed(1)})`);

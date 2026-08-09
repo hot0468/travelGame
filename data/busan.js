@@ -122,7 +122,9 @@ REGIONS.busan = {
     // ── 관광지 ──────────────────────────────────────────
     { id: 'haeundae', gu: '해운대구', name: '해운대해수욕장', type: 'sight', sub: 'nature', lat: 35.1587, lng: 129.1604, cost: 0, stay: 90, joy: 7, open: [0, 1440] },
     { id: 'gwangalli', gu: '수영구', name: '광안리해수욕장', type: 'sight', sub: 'photo', lat: 35.1532, lng: 129.1187, cost: 0, stay: 90, joy: 7, open: [0, 1440] },
-    { id: 'gamcheon', gu: '사하구', name: '감천문화마을', type: 'sight', sub: 'photo', lat: 35.0975, lng: 129.0107, cost: 2000, stay: 120, joy: 9, open: [540, 1080] },
+    // access: 대중교통 정류장·역에서 문 앞까지의 추가 도보(분). 언덕 위라 유별나게 멀다.
+    // 실측(네이버 길찾기) 부산역→감천: 버스 46분 / 지하철 37분(승차 7 + 도보 30). access 21 로 44·38.
+    { id: 'gamcheon', gu: '사하구', name: '감천문화마을', type: 'sight', sub: 'photo', access: 21, lat: 35.0975, lng: 129.0107, cost: 2000, stay: 120, joy: 9, open: [540, 1080] },
     { id: 'jagalchi', gu: '중구', name: '자갈치시장', type: 'sight', sub: 'shopping', lat: 35.0967, lng: 129.0304, cost: 0, stay: 60, joy: 7, open: [300, 1320] },
     { id: 'gukje', closed: [6], gu: '중구', name: '국제시장', type: 'sight', sub: 'shopping', lat: 35.1017, lng: 129.0263, cost: 0, stay: 60, joy: 6, open: [540, 1320] },
     { id: 'biff', gu: '중구', name: 'BIFF광장', type: 'sight', sub: 'culture', lat: 35.0985, lng: 129.0281, cost: 0, stay: 40, joy: 5, open: [600, 1320] },
@@ -293,13 +295,13 @@ REGIONS.busan = {
       from: '대구', stamina: 100, staminaType: 'morning', age: '30대', startDow: 5,
       desc: '대구에서 갑니다. 부산에선 대중교통만 탈게요. 감천이랑 자갈치는 꼭이요!',
       days: 2, budget: 240000, people: 2, must: ['gamcheon', 'jagalchi'], minSights: 4,
-      banModes: ['taxi', 'car'], endBy: 1200, par: 281
+      banModes: ['taxi', 'car'], endBy: 1200, par: 259
     },
     {
       id: 'q3', lv: 2, title: '당일치기 출장 뒤풀이',
       from: '대구', stamina: 95, staminaType: 'night', age: '40대', startDow: 2,
       desc: '대구에서 아침에 출발해 당일로 다녀옵니다. 용궁사는 꼭 보고 싶어요. 셋이서 갑니다.',
-      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, endBy: 1380, par: 144
+      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, endBy: 1380, par: 155
     },
     {
       id: 'q4', lv: 3, title: '부모님 효도여행',
@@ -312,7 +314,7 @@ REGIONS.busan = {
       id: 'q5', lv: 4, title: '아이 둘 데리고 가는 가족',
       from: '제주', stamina: 90, staminaType: 'morning', age: '아이 동반', startDow: 4,
       desc: '제주에서 아이 둘 데리고 갑니다. 롯데월드는 필수! 이동은 편했으면 해요.',
-      days: 3, budget: 1200000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, endBy: 1200, par: 346
+      days: 3, budget: 1200000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, endBy: 1200, par: 335
     },
     {
       // 2인이라 객실이 1개뿐이라 최고급 호텔이 예산에 들어온다 — 다른 의뢰는 4인이라 2객실이 되어 불가능하다.

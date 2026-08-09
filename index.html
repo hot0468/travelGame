@@ -520,6 +520,8 @@
 <dialog id="result"></dialog>
 
 <script src="data/busan.js"></script>
+<script src="data/subway.js"></script>
+<script src="data/bus.js"></script>
 <script>
 // ─────────────────────────────────────────────────────────────
 // 엔진
@@ -618,12 +620,105 @@ function km(a, b) { // haversine
 // ponytail: 직선거리×보정계수 근사. 실 API(카카오/TMap)로 바꾸려면 이 함수만 교체하면 됨.
 function travel(a, b, mode, people, depart, weekend) {
   const t = TRANSPORT[mode], d = km(a, b) * DETOUR;
-  const base = Math.round(d / t.kmh * 60) + t.walk + t.wait;
-  const f = rushFactor(mode, depart, base, weekend);
-  const min = Math.round(base * f);
+  const ride = Math.round(d / t.kmh * 60);
+  // 언덕 위·노선에서 먼 곳은 정류장에서 문 앞까지가 유난히 멀다(POI 의 access, 분).
+  // 대중교통에만 붙는다 — 택시·렌터카는 문 앞까지 가고, 도보는 이미 문 앞까지 걷는다.
+  const acc = PUBLIC.includes(mode) ? (a.access || 0) + (b.access || 0) : 0;
+  // 정체는 주행 구간만 늘린다. 걷고 기다리는 시간은 길이 막혀도 그대로다.
+  const f = rushFactor(mode, depart, ride, weekend);
+  const fixed = t.walk + t.wait + acc;
+  const min = Math.round(ride * f) + fixed;
   // 도보 수단은 구간 전체가 걷는 시간, 나머지는 정류장까지 접근하는 시간만
-  return { min, base, rush: f > 1, km: d, walkMin: mode === 'walk' ? min : t.walk,
+  return { min, base: ride + fixed, rush: f > 1, km: d,
+           walkMin: mode === 'walk' ? min : t.walk + acc,
            waitMin: t.wait, cost: Math.round(t.fare(d, people)) };
+}
+
+// ── 지하철 경로 안내 (data/subway.js) ──────────────────────────
+// 실제 노선·역 순서로 "1호선 자갈치역 → 서면역 환승 → 2호선 해운대역" 을 만든다.
+// 지금은 표시 전용이다 — travel() 의 소요시간에는 아직 반영하지 않는다.
+// 환승 1회 = 5정거장 값. 3으로 두면 부산역→해운대를 연산·수영 2회 환승으로 잡는다 —
+// 정거장 수는 적지만 실제로 아무도 그렇게 안 간다. 5면 서면 1회 환승이 이긴다.
+const TRANSFER_COST = 5;
+const stName = k => k + '역';            // 데이터는 "역" 을 뗀 키로 들고 있다
+function subwayOf(region) { return REGIONS[region || S.region].subway; }
+// 어떤 지점에서 가장 가까운 역
+function nearestStation(p, region) {
+  const sw = subwayOf(region); if (!sw || !p) return null;
+  let best = null;
+  for (const k in sw.pos) {
+    const d = km(p, { lat: sw.pos[k][0], lng: sw.pos[k][1] });
+    if (!best || d < best.km) best = { st: k, km: d };
+  }
+  return best;
+}
+// 역|노선 을 노드로 둔 그래프. 인접역 1, 같은 역의 다른 노선(환승) TRANSFER_COST.
+function subwayGraph(region) {
+  const sw = subwayOf(region); if (!sw) return null;
+  if (sw._g) return sw._g;               // 노선표는 안 변하므로 한 번만 만든다
+  const adj = {}, lines = {};
+  const link = (u, v, w) => { (adj[u] = adj[u] || []).push([v, w]); };
+  sw.lines.forEach(L => L.st.forEach((s, i) => {
+    (lines[s] = lines[s] || []).push(L.id);
+    if (i) { const a = s + '|' + L.id, b = L.st[i - 1] + '|' + L.id; link(a, b, 1); link(b, a, 1); }
+  }));
+  for (const s in lines) lines[s].forEach(x => lines[s].forEach(y => { if (x !== y) link(s + '|' + x, s + '|' + y, TRANSFER_COST); }));
+  return (sw._g = { adj, lines });
+}
+// 두 지점 사이 지하철 경로. 노선별 구간과 환승 횟수를 돌려준다.
+function subwayPath(a, b, region) {
+  const sw = subwayOf(region), g = subwayGraph(region);
+  if (!sw || !g) return null;
+  const A = nearestStation(a, region), B = nearestStation(b, region);
+  if (!A || !B || A.st === B.st) return null;
+  const dist = {}, prev = {};
+  (g.lines[A.st] || []).forEach(l => dist[A.st + '|' + l] = 0);
+  const seen = {};
+  for (;;) {
+    let u = null;
+    for (const k in dist) if (!seen[k] && (u === null || dist[k] < dist[u])) u = k;
+    if (u === null) break;
+    seen[u] = 1;
+    for (const [v, w] of (g.adj[u] || [])) {
+      if (dist[v] === undefined || dist[u] + w < dist[v]) { dist[v] = dist[u] + w; prev[v] = u; }
+    }
+  }
+  let end = null;
+  (g.lines[B.st] || []).forEach(l => { const k = B.st + '|' + l;
+    if (dist[k] !== undefined && (end === null || dist[k] < dist[end])) end = k; });
+  if (end === null) return null;
+  const path = []; for (let n = end; n; n = prev[n]) path.unshift(n);
+  // 같은 노선끼리 묶어 구간으로 만든다
+  const legs = [];
+  path.forEach(n => {
+    const [st, line] = n.split('|');
+    const last = legs[legs.length - 1];
+    if (last && last.line === line) { last.to = st; last.stops++; }
+    else legs.push({ line, from: st, to: st, stops: 0 });
+  });
+  const real = legs.filter(l => l.stops > 0);          // 환승만 하고 안 탄 구간은 뺀다
+  if (!real.length) return null;
+  const nameOf = id => (sw.lines.find(L => L.id === id) || {}).name || id + '호선';
+  return { legs: real.map(l => ({ ...l, name: nameOf(l.line), color: (sw.lines.find(L => L.id === l.line) || {}).color })),
+           transfers: real.length - 1,
+           stops: real.reduce((s, l) => s + l.stops, 0),
+           fromSt: A.st, toSt: B.st, walkFrom: A.km, walkTo: B.km };
+}
+// "1호선 부산역→서면역 · 2호선 서면역→해운대역" 형태의 한 줄 요약
+const subwayText = p => !p ? ''
+  : p.legs.map(l => `${l.name} ${stName(l.from)}→${stName(l.to)}`).join(' · ');
+
+// ── 버스 노선 안내 (data/bus.js) ───────────────────────────────
+// 두 곳을 모두 지나는 노선이 곧 직통이다. 경로 탐색이 아니라 경유 노선 집합의 교집합이라
+// 직통이 없으면 환승 조합은 못 찾는다 — 그때는 정류장만 알려준다. 지하철과 같이 표시 전용.
+function busOf(p, region) {
+  const B = REGIONS[region || S.region].bus;
+  return (B && p && (B.near[p.id] || B.starts[p.id])) || null;
+}
+function busPair(a, b, region) {
+  const A = busOf(a, region), Z = busOf(b, region);
+  if (!A || !Z || A.s === Z.s) return null;
+  return { from: A, to: Z, direct: A.r.filter(n => Z.r.includes(n)) };
 }
 
 // 손님이 고른 도착 교통편. 없으면 그 출발지의 첫 번째.
@@ -1542,7 +1637,44 @@ function renderEdit(res) {
     <div class="s" style="margin-top:4px">${ic(TRANSPORT[r.mode].ico)} ${r.leg.min}분${
       r.leg.rush ? ` <b style="color:var(--warn)">(정체 +${r.leg.min - r.leg.base}분)</b>` : ''}${
       r.leg.walkMin ? ` · ${ic('footprints')} 도보 ${r.leg.walkMin}분` : ''}${
-      r.leg.waitMin ? ` · ${ic('hourglass')} 대기 ${r.leg.waitMin}분` : ''}</div>`;
+      r.leg.waitMin ? ` · ${ic('hourglass')} 대기 ${r.leg.waitMin}분` : ''}</div>
+    ${subwayLine(res, r)}${busLine(res, r)}`;
+}
+
+// 그 줄이 출발하는 지점. 첫 줄은 출발지, 나머지는 앞 장소.
+function prevPoint(res, r) {
+  const i = res.rows.indexOf(r);
+  return i > 0 ? res.rows[i - 1].poi : startPoint(S);
+}
+
+// 버스를 골랐을 때 두 정류장을 다 지나는 노선 번호. 소요시간에는 안 쓰는 안내용 표시.
+function busLine(res, r) {
+  if (r.mode !== 'bus') return '';
+  const b = busPair(prevPoint(res, r), r.poi);
+  if (!b) return '';
+  const L = REGIONS[S.region].bus.lines;
+  const head = n => (L[n] && L[n].h) ? ` <span style="opacity:.7">${esc(L[n].h)}분</span>` : '';
+  const far = Math.max(b.from.d, b.to.d);              // 정류장이 멀면 안내가 무의미하다
+  return `<div class="s" style="margin-top:4px">
+    ${ic('bus')} ${esc(b.from.s)} → ${esc(b.to.s)}
+    ${b.direct.length
+      ? `· ${b.direct.slice(0, 4).map(n => `<b>${esc(n)}</b>${head(n)}`).join(', ')}`
+      : `<span style="color:var(--warn)">· 직통 노선 없음 — 환승 필요</span>`}
+    ${far > .5 ? `<br><span style="color:var(--warn)">정류장까지 ${far.toFixed(1)}km — 걸어서 갈 거리가 아니다</span>` : ''}
+  </div>`;
+}
+
+// 지하철을 골랐을 때만 실제 노선·환승을 덧붙인다. 소요시간에는 아직 안 쓰는 안내용 표시.
+function subwayLine(res, r) {
+  if (r.mode !== 'subway') return '';
+  const p = subwayPath(prevPoint(res, r), r.poi);
+  if (!p) return '';
+  const far = Math.max(p.walkFrom, p.walkTo) > 2;      // 역에서 멀면 안내가 무의미하다
+  return `<div class="s subway" style="margin-top:4px">
+    ${p.legs.map(l => `<b style="color:${l.color}">${esc(l.name)}</b> ${esc(stName(l.from))}→${esc(stName(l.to))}`).join(' · ')}
+    <span style="opacity:.7">· ${p.stops}정거장${p.transfers ? ` · 환승 ${p.transfers}회` : ' · 직통'}</span>
+    ${far ? `<br><span style="color:var(--warn)">역에서 ${Math.max(p.walkFrom, p.walkTo).toFixed(1)}km — 실제로는 버스·택시 구간</span>` : ''}
+  </div>`;
 }
 
 // 어디에 얼마를 썼는지. 일차별로 묶어 보여준다.
@@ -1944,7 +2076,11 @@ if (location.search.includes('test')) {
   ok(busRush.min > busFree.min, `출퇴근 시간 버스 지연 (${busFree.min}분 → ${busRush.min}분)`);
   ok(travel(home, get('haeundae'), 'taxi', 2, 480).min > travel(home, get('haeundae'), 'taxi', 2, 840).min, '택시도 정체 영향');
   ok(travel(home, get('haeundae'), 'subway', 2, 480).min === travel(home, get('haeundae'), 'subway', 2, 840).min, '지하철은 정체 영향 없음');
-  ok(Math.abs(busRush.min / busFree.base - 1.5) < .01, `정체 구간 전체에 걸치면 정확히 1.5배 (${(busRush.min / busFree.base).toFixed(2)})`);
+  // 정체는 주행 구간만 늘린다 — 도보·대기는 길이 막혀도 그대로다
+  const fx = TRANSPORT.bus.walk + TRANSPORT.bus.wait;
+  const rr = (busRush.min - fx) / (busFree.base - fx);
+  ok(Math.abs(rr - 1.5) < .02, `정체 구간 전체에 걸치면 주행분이 정확히 1.5배 (${rr.toFixed(2)})`);
+  ok(busRush.min - busFree.min < busFree.base * .5, '도보·대기에는 정체 배수가 안 붙는다');
 
   // 카페는 식사보다 체력 회복이 적다
   const eat = compute({ region: 'busan', quest: R.quests[0], arriveId: 'ktx', plan: [{ id: 'dwaeji', mode: 'bus', stay: 60 }] });
