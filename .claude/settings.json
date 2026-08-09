@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node *)",
+      "Bash(powershell -NoProfile -File tools/*)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git show*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push*)",
+      "Bash(git fetch*)",
+      "Bash(git ls-tree*)",
+      "Bash(grep *)",
+      "Bash(sed *)",
+      "Bash(curl -sfSL https://unpkg.com/lucide-static*)",
+      "Bash(rm -f _cal.html*)",
+      "Bash(rm -f _shot.png*)"
+    ]
+  }
+}

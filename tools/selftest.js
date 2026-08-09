@@ -1,0 +1,11 @@
+const fs = require('fs'), path = require('path');
+const dir = require('path').join(__dirname, '..');
+global.window = global;
+eval(fs.readFileSync(path.join(dir, 'data/busan.js'), 'utf8'));
+const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
+const engine = html.slice(html.indexOf('const DETOUR'), html.indexOf('// 상태'));
+const tests = html.slice(html.indexOf("if (location.search.includes('test'))"), html.lastIndexOf('</script>'));
+global.location = { search: '?test' };
+global.S = { region: 'busan' };
+global.poi = id => REGIONS.busan.pois.find(p => p.id === id);
+eval(engine + '\n' + tests);
