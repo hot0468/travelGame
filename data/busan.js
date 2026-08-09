@@ -89,24 +89,24 @@ REGIONS.busan = {
   // per:'car' 를 고르면 차를 몰고 오므로 여행 중 렌터카 일 대여료가 들지 않는다.
   origins: {
     '서울': [
-      { id: 'ktx',  name: 'KTX',      ico: 'train-front', to: 'busanstn', cost: 59800, per: 'person', arrive: 545, min: 165 },
-      { id: 'air',  name: '항공',      ico: 'plane',       to: 'gimhae',   cost: 79000, per: 'person', arrive: 530, min: 110 },
-      { id: 'bus',  name: '고속버스',   ico: 'bus',         to: 'nopo',     cost: 27000, per: 'person', arrive: 650, min: 260 },
-      { id: 'car',  name: '자차',      ico: 'car',         to: 'busanstn', cost: 52000, per: 'car',    arrive: 630, min: 300 }
+      { id: 'ktx', drain: 0.06,  name: 'KTX',      ico: 'train-front', to: 'busanstn', cost: 59800, per: 'person', arrive: 545, min: 165 },
+      { id: 'air', drain: 0.1,  name: '항공',      ico: 'plane',       to: 'gimhae',   cost: 79000, per: 'person', arrive: 530, min: 110 },
+      { id: 'bus', drain: 0.11,  name: '고속버스',   ico: 'bus',         to: 'nopo',     cost: 27000, per: 'person', arrive: 650, min: 260 },
+      { id: 'car', drain: 0.16,  name: '자차',      ico: 'car',         to: 'busanstn', cost: 52000, per: 'car',    arrive: 630, min: 300 }
     ],
     '대구': [
-      { id: 'ktx',  name: 'KTX',      ico: 'train-front', to: 'busanstn', cost: 17100, per: 'person', arrive: 520, min: 50 },
-      { id: 'bus',  name: '고속버스',   ico: 'bus',         to: 'nopo',     cost: 9500,  per: 'person', arrive: 580, min: 100 },
-      { id: 'car',  name: '자차',      ico: 'car',         to: 'busanstn', cost: 22000, per: 'car',    arrive: 570, min: 110 }
+      { id: 'ktx', drain: 0.06,  name: 'KTX',      ico: 'train-front', to: 'busanstn', cost: 17100, per: 'person', arrive: 520, min: 50 },
+      { id: 'bus', drain: 0.11,  name: '고속버스',   ico: 'bus',         to: 'nopo',     cost: 9500,  per: 'person', arrive: 580, min: 100 },
+      { id: 'car', drain: 0.16,  name: '자차',      ico: 'car',         to: 'busanstn', cost: 22000, per: 'car',    arrive: 570, min: 110 }
     ],
     '광주': [
-      { id: 'ktx',  name: 'KTX',      ico: 'train-front', to: 'busanstn', cost: 40000, per: 'person', arrive: 600, min: 195 },
-      { id: 'bus',  name: '고속버스',   ico: 'bus',         to: 'nopo',     cost: 26000, per: 'person', arrive: 630, min: 240 },
-      { id: 'car',  name: '자차',      ico: 'car',         to: 'busanstn', cost: 45000, per: 'car',    arrive: 620, min: 230 }
+      { id: 'ktx', drain: 0.06,  name: 'KTX',      ico: 'train-front', to: 'busanstn', cost: 40000, per: 'person', arrive: 600, min: 195 },
+      { id: 'bus', drain: 0.11,  name: '고속버스',   ico: 'bus',         to: 'nopo',     cost: 26000, per: 'person', arrive: 630, min: 240 },
+      { id: 'car', drain: 0.16,  name: '자차',      ico: 'car',         to: 'busanstn', cost: 45000, per: 'car',    arrive: 620, min: 230 }
     ],
     '제주': [
-      { id: 'air',  name: '항공',      ico: 'plane',       to: 'gimhae',   cost: 62000, per: 'person', arrive: 540, min: 60 },
-      { id: 'ship', name: '여객선',    ico: 'ship',        to: 'port',     cost: 38000, per: 'person', arrive: 480, min: 690 }
+      { id: 'air', drain: 0.1,  name: '항공',      ico: 'plane',       to: 'gimhae',   cost: 62000, per: 'person', arrive: 540, min: 60 },
+      { id: 'ship', drain: 0.09, name: '여객선',    ico: 'ship',        to: 'port',     cost: 38000, per: 'person', arrive: 480, min: 690 }
     ]
   },
 
@@ -151,6 +151,9 @@ REGIONS.busan = {
     { id: 'f1963', gu: '수영구', name: 'F1963 복합문화공간', type: 'sight', sub: 'culture', lat: 35.1585, lng: 129.0975, cost: 0, stay: 80, joy: 7, open: [540, 1260] },
     { id: 'history', closed: [0], gu: '중구', name: '부산근현대역사관', type: 'sight', sub: 'culture', lat: 35.1010, lng: 129.0335, cost: 0, stay: 70, joy: 7, open: [600, 1080] },
     { id: 'library', closed: [0], gu: '사상구', name: '부산도서관', type: 'sight', sub: 'culture', lat: 35.1690, lng: 128.9880, cost: 0, stay: 60, joy: 6, open: [540, 1200] },
+    { id: 'millaksu', gu: '수영구', name: '민락수변공원', type: 'sight', sub: 'photo', lat: 35.1540, lng: 129.1285, cost: 0, stay: 70, joy: 8, open: [0, 1440] },
+    { id: 'daejeo', gu: '강서구', name: '대저생태공원', type: 'sight', sub: 'nature', lat: 35.1830, lng: 128.9670, cost: 0, stay: 90, joy: 7, open: [0, 1440] },
+    { id: 'skycapsule', gu: '해운대구', name: '청사포 스카이캡슐', type: 'sight', sub: 'activity', lat: 35.1573, lng: 129.1917, cost: 22000, stay: 60, joy: 9, open: [570, 1200] },
 
     // ── 식당 ────────────────────────────────────────────
     { id: 'dwaeji', gu: '중구', name: '쌍둥이돼지국밥', type: 'food', sub: 'meal', lat: 35.0968, lng: 129.0305, cost: 10000, stay: 50, joy: 7, open: [480, 1320] },
@@ -232,6 +235,11 @@ REGIONS.busan = {
     { id: 'hadancafe', gu: '사하구', name: '하단 강변 카페', type: 'food', sub: 'cafe', lat: 35.1030, lng: 128.9640, cost: 7500, stay: 50, joy: 7, open: [630, 1260] },
     { id: 'ilgwang', gu: '기장군', name: '일광해수욕장 조개구이', type: 'food', sub: 'meal', lat: 35.2610, lng: 129.2350, cost: 27000, stay: 85, joy: 8, open: [1020, 1440] },
     { id: 'jeonggwan', gu: '기장군', name: '정관 순두부', type: 'food', sub: 'meal', closed: [1], lat: 35.3200, lng: 129.1800, cost: 11000, stay: 50, joy: 6, open: [600, 1260] },
+    { id: 'subyeon', gu: '수영구', name: '수변최고국밥', type: 'food', sub: 'meal', lat: 35.1527, lng: 129.1252, cost: 11000, stay: 50, joy: 8, open: [0, 1440] },
+    { id: 'ijaemo', gu: '중구', name: '이재모피자', type: 'food', sub: 'meal', lat: 35.1010, lng: 129.0247, cost: 22000, stay: 60, joy: 8, open: [660, 1290] },
+    { id: 'chilamsagye', gu: '기장군', name: '칠암사계', type: 'food', sub: 'cafe', lat: 35.2760, lng: 129.2530, cost: 12000, stay: 70, joy: 8, open: [600, 1290] },
+    // 영도구 동삼로28번길 6 (동삼동, 한국해양대 방면). 좌표는 도로명 주소를 지도에 맞춘 근사값.
+    { id: 'baekseol', gu: '영도구', name: '백설대학', type: 'food', sub: 'meal', lat: 35.0797, lng: 129.0812, cost: 15000, stay: 60, joy: 8, open: [660, 1380] },
 
     // ── 숙소 (cost = 1박 2인실 기준, stay=0: 취침하면 그날 종료) ──
     { id: 'gh_nampo', gu: '중구', name: '남포동 게스트하우스', type: 'stay', tier: 'guesthouse', lat: 35.0993, lng: 129.0290, cost: 25000, stay: 0, joy: 4, open: [900, 1440] },
@@ -278,33 +286,41 @@ REGIONS.busan = {
       id: 'q1', lv: 1, title: '첫 손님 · 바다가 보고 싶어요',
       from: '서울', stamina: 110, staminaType: 'energizer', age: '20대', startDow: 4,
       desc: '서울에서 갑니다. 부산 처음이에요. 바다만 보면 돼요.',
-      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, par: 345
+      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, endBy: 1260, par: 148
     },
     {
       id: 'q2', lv: 1, title: '뚜벅이 커플 · 알뜰하게',
       from: '대구', stamina: 100, staminaType: 'morning', age: '30대', startDow: 5,
       desc: '대구에서 갑니다. 부산에선 대중교통만 탈게요. 감천이랑 자갈치는 꼭이요!',
       days: 2, budget: 240000, people: 2, must: ['gamcheon', 'jagalchi'], minSights: 4,
-      banModes: ['taxi', 'car'], par: 440
+      banModes: ['taxi', 'car'], endBy: 1200, par: 281
     },
     {
       id: 'q3', lv: 2, title: '당일치기 출장 뒤풀이',
       from: '대구', stamina: 95, staminaType: 'night', age: '40대', startDow: 2,
       desc: '대구에서 아침에 출발해 당일로 다녀옵니다. 용궁사는 꼭 보고 싶어요. 셋이서 갑니다.',
-      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, par: 260
+      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, endBy: 1380, par: 144
     },
     {
       id: 'q4', lv: 3, title: '부모님 효도여행',
       from: '광주', stamina: 75, staminaType: 'motionsick', age: '60대 이상', startDow: 1,
       desc: '광주에서 부모님 모시고 갑니다. 많이 걷긴 힘드세요. 숙소는 호텔로.',
       days: 3, budget: 1100000, people: 4, must: ['taejongdae', 'beomeosa'], minSights: 5,
-      minStayTier: 'hotel', par: 375
+      minStayTier: 'hotel', endBy: 1140, par: 210
     },
     {
       id: 'q5', lv: 4, title: '아이 둘 데리고 가는 가족',
       from: '제주', stamina: 90, staminaType: 'morning', age: '아이 동반', startDow: 4,
       desc: '제주에서 아이 둘 데리고 갑니다. 롯데월드는 필수! 이동은 편했으면 해요.',
-      days: 3, budget: 1200000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, par: 490
+      days: 3, budget: 1200000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, endBy: 1200, par: 346
+    },
+    {
+      // 2인이라 객실이 1개뿐이라 최고급 호텔이 예산에 들어온다 — 다른 의뢰는 4인이라 2객실이 되어 불가능하다.
+      id: 'q6', lv: 5, title: '결혼 10주년 · 하루쯤은 호사스럽게',
+      from: '서울', stamina: 95, staminaType: 'night', age: '30대', startDow: 3,
+      desc: '서울에서 둘이 갑니다. 결혼 10주년이라 숙소만큼은 최고로 하고 싶어요. 예산은 넉넉합니다.',
+      days: 3, budget: 2500000, people: 2, must: ['xthesky'], minSights: 4,
+      minStayTier: 'hotel', endBy: 1260, par: 359
     }
   ]
 };

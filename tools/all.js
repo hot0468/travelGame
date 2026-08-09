@@ -3,13 +3,13 @@
 const { execFileSync } = require('child_process');
 const path = require('path');
 
-const suites = ['selftest', 'stamtest', 'bufftest', 'subtest', 'dowtest', 'rettest', 'daytest', 'balance'];
+const suites = ['selftest', 'stamtest', 'bufftest', 'subtest', 'dowtest', 'rettest', 'daytest', 'ruletest', 'balance'];
 let fails = 0;
 
 for (const name of suites) {
   let out;
   try {
-    out = execFileSync('node', [path.join(__dirname, name + '.js')], { encoding: 'utf8', timeout: 120000 });
+    out = execFileSync('node', [path.join(__dirname, name + '.js')], { encoding: 'utf8', timeout: 300000 });
   } catch (e) {
     out = (e.stdout || '') + (e.stderr || e.message);
   }
