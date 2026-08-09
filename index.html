@@ -42,13 +42,33 @@
   /* 지도는 화면 전체. 좌·우 패널은 그 위에 떠 있는 반투명 레이어. */
   .panel{position:absolute;top:53px;bottom:0;z-index:15;display:flex;flex-direction:column;min-height:0;
          background:rgba(255,252,244,.94);backdrop-filter:blur(14px);box-shadow:-5px 0 0 rgba(59,50,97,.08)}
-  .panel.right{right:0;width:490px;border-left:3px solid var(--ink)}
-  /* 오른쪽 창 2단: 왼쪽 타임라인 / 오른쪽 일정 정보·합계 */
-  .rcols{display:flex;flex:1;min-height:0}
-  .tlcol{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
-  .infocol{width:242px;flex:0 0 242px;border-left:2px dashed #d9cdae;display:flex;flex-direction:column;min-height:0}
-  .infoscroll{flex:1;overflow-y:auto;min-height:0}
-  .infocol .edit{border-top:1px solid var(--line);margin-top:8px}
+  .panel.right{right:0;width:300px;border-left:3px solid var(--ink)}
+  /* 일정 정보와 편집창은 타임라인 왼쪽에 떠 있는 단독 팝업.
+     패널의 자식이라 접기 애니메이션에 같이 딸려 나간다. */
+  .lpops{position:absolute;right:calc(100% + 12px);top:10px;width:238px;z-index:2;
+         display:flex;flex-direction:column;gap:9px;max-height:calc(100% - 20px);pointer-events:none}
+  .lpop{background:var(--glass);backdrop-filter:blur(12px);border:2.5px solid var(--ink);
+        border-radius:16px;box-shadow:var(--hard);pointer-events:auto;overflow:hidden;
+        animation:popin .22s cubic-bezier(.34,1.56,.64,1)}
+  .lpop[hidden]{display:none}
+  #infopop{transform:rotate(-.7deg);overflow-y:auto}
+  #editpop{transform:rotate(.6deg)}
+  .lpop h2{padding:11px 13px 0;margin:0}
+  .gauges{padding:10px 13px 2px}
+  .gauges .stam+.stam{margin-top:9px}
+  #editpop .edit{border:0;margin:0;background:transparent;padding:11px 13px}
+  #stats{padding:9px 13px 12px;border-top:2px dashed #d9cdae;margin-top:9px}
+  #stats .stat:last-child{margin-bottom:0}
+  /* 총 경비를 누르면 펼쳐지는 지출 내역 */
+  #vSpend{cursor:pointer;border-bottom:1.5px dotted var(--dim)}
+  #bills{margin:6px 0 2px;border-top:1px dashed var(--line);padding-top:6px}
+  #bills[hidden]{display:none}
+  .bday{font-size:11px;color:var(--dim);font-weight:800;margin:5px 0 2px}
+  .bday:first-child{margin-top:0}
+  .brow{display:flex;align-items:center;gap:5px;font-size:11.5px;line-height:1.75}
+  .brow .bnm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .brow b{font-weight:700}
+  .brow.minus b{color:var(--ok)}
   /* 좌상단 HUD — 의뢰 요약과 필터만. 목록은 없애고 장소는 지도에서 직접 고른다. */
   .hud{position:absolute;top:63px;left:12px;z-index:14;width:238px;display:flex;flex-direction:column;gap:7px}
   .hud .card{margin:0;padding:11px 13px;background:var(--glass);backdrop-filter:blur(10px);cursor:default;transform:rotate(-.7deg)}
@@ -56,7 +76,12 @@
   .hud>#warns .card{transform:rotate(.5deg)}
   .qline{font-size:13px;color:#3d4c5c;line-height:1.7;margin-top:2px}
   .hud .card:hover{border-color:var(--line)}
-  .hud .tabs{padding:0;background:var(--glass);backdrop-filter:blur(10px);border-radius:8px}
+  .hud .tabs{padding:0;background:none;backdrop-filter:blur(10px);border-radius:8px}
+  /* 대분류 아래 세부 타입 필터 — 이름이 길어 한 줄에 안 들어가면 접힌다 */
+  #subfilters{flex-wrap:wrap;margin-top:5px}
+  #subfilters[hidden]{display:none}
+  #subfilters button{flex:0 1 auto;font-size:11px;padding:5px 9px;border-width:2px}
+  #subfilters .ic{margin-right:2px}
   /* 구 이름을 누르면 뜨는 그 구의 장소 목록 */
   #gulist{background:var(--glass);backdrop-filter:blur(12px);border:2.5px solid var(--ink);
           border-radius:16px;overflow:hidden;box-shadow:var(--hard);animation:popin .2s cubic-bezier(.34,1.56,.64,1)}
@@ -82,6 +107,16 @@
   .pin.sel .ring{transform-box:fill-box;transform-origin:center;animation:ripple 1.1s ease-out infinite}
   .pin.sel .dot{transform-box:fill-box;transform-origin:center;animation:pop .45s cubic-bezier(.34,1.56,.64,1)}
   .pin:hover .dot{transform-box:fill-box;transform-origin:center;transform:scale(1.18);transition:transform .12s}
+  /* 구 목록에서 짚은 장소 — 지도에서 찾을 수 있게 도드라지게 */
+  /* 확대는 transform 으로 고정해 두고 맥박만 애니메이션 — 모션을 꺼도 눈에 띈다 */
+  .pin.hi .dot{stroke:var(--ink);stroke-width:5;transform-box:fill-box;transform-origin:center;
+               transform:scale(1.38);animation:hibeat .7s ease-in-out infinite alternate}
+  .pin.hi{filter:drop-shadow(0 0 7px rgba(59,50,97,.55))}
+  @keyframes hibeat{from{transform:scale(1.14)}to{transform:scale(1.46)}}
+  #map g.hi text{font-weight:800!important}
+  #map g.hi .lbl{fill:var(--ink)}
+  .gurow.hi{background:var(--sel);box-shadow:inset 3px 0 0 var(--acc)}
+  @media (prefers-reduced-motion:reduce){.pin.hi .dot{animation:none}}
   /* 일정에 담을 때 떠오르는 +1 */
   @keyframes floatup{from{opacity:1;transform:translate(-50%,0) scale(1)}
                      to{opacity:0;transform:translate(-50%,-46px) scale(1.5)}}
@@ -139,23 +174,29 @@
   .mapctl button{width:26px;height:24px;border:0;border-radius:999px;cursor:pointer;
                  background:transparent;color:var(--dim);font-size:14px;font-family:inherit;line-height:1}
   .mapctl button:hover{background:var(--line);color:var(--fg)}
-  .buffbar{display:flex;gap:3px}
-  .bchip{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9px;
-         background:#fff;border:2px solid var(--ink);color:var(--acc);box-shadow:2px 2px 0 rgba(59,50,97,.85);transform:rotate(-3deg)}
-  .bchip:nth-child(even){transform:rotate(3deg)}
+  /* 레벨 옆 버프 버튼과 그 아래 팝오버 */
+  #buffbtn{display:flex;align-items:center;gap:5px;cursor:pointer;font-family:inherit;transform:rotate(-2deg)}
+  #buffbtn:disabled{opacity:.45;cursor:default}
+  #buffbtn .ic{color:var(--acc)}
+  #buffpop{position:fixed;z-index:30;width:266px;background:var(--panel);border:3px solid var(--ink);
+           border-radius:18px;padding:11px 13px;box-shadow:5px 6px 0 rgba(59,50,97,.20);
+           animation:popin .22s cubic-bezier(.34,1.56,.64,1)}
+  #buffpop[hidden]{display:none}
+  .brow2{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-top:1px dashed var(--line)}
+  .brow2:first-of-type{border-top:0}
+  .brow2 .bic{flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:28px;height:28px;
+              border-radius:9px;background:#fff;border:2px solid var(--ink);color:var(--acc);
+              box-shadow:2px 2px 0 rgba(59,50,97,.85);font-size:14px}
+  .brow2 .bt{font-weight:800;font-size:13px}
+  .brow2 .bd{font-size:11.5px;color:var(--dim);line-height:1.55;margin-top:2px}
+  .buse{font-size:11px;font-weight:800;color:var(--ok);white-space:nowrap}
+  .buse.gone{color:var(--dim)}
   .zoomtxt{font-size:11px;color:var(--dim);min-width:42px;text-align:center;font-variant-numeric:tabular-nums}
   /* 아이콘: 글자 크기·색을 그대로 따라가게 */
   .ic{width:1em;height:1em;flex:0 0 auto;vertical-align:-0.14em;fill:none;stroke:currentColor;
       stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .ic.big{width:1.15em;height:1.15em}
-  /* 일정표 상단 도착 교통편 요약 */
-  .arrbar{padding:8px 12px 0;font-size:12px}
-  .arrline{display:flex;align-items:center;gap:8px;line-height:1.85}
-  .arrline .k{color:var(--dim);flex:0 0 62px;display:flex;align-items:center;gap:4px}
-  .arrline b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .arrnote{margin-left:70px}
   .mini.wide{width:100%;margin-top:7px;padding:4px}
-  .arrbar b{font-weight:700}
   .mini{white-space:nowrap;flex:0 0 auto;background:var(--panel);border:2px solid var(--ink);color:var(--fg);
         border-radius:999px;padding:3px 11px;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit;
         box-shadow:2px 2px 0 rgba(59,50,97,.85);transition:transform .07s,box-shadow .07s}
@@ -207,6 +248,10 @@
   .hr b{position:absolute;left:-50px;top:-7px;width:44px;text-align:right;font:600 12px/1 inherit;color:var(--dim);font-variant-numeric:tabular-nums}
   .hr.mid{border-top-style:dotted;opacity:.5}
   .hr.mn{border-top:1px solid var(--acc);opacity:.55}          /* 자정 */
+  /* 손님이 정한 귀가 마감 — 넘기면 제출이 막히므로 눈에 띄게 */
+  .hr.due{border-top:2.5px dashed var(--bad)}
+  .hr.due b{left:auto;right:6px;top:-16px;width:auto;text-align:right;color:var(--bad);font-weight:800;
+            background:var(--panel);padding:1px 6px;border-radius:999px;border:1.5px solid var(--bad)}
   .tlhint{position:absolute;left:0;right:66px;text-align:center;font-size:12px;color:var(--dim);z-index:4}
   .blk{position:absolute;left:0;right:66px;border-radius:13px;padding:2px 8px;box-shadow:2px 2px 0 rgba(59,50,97,.10);overflow:hidden;cursor:pointer;
        font-size:11px;line-height:1.35;white-space:nowrap;text-overflow:ellipsis}
@@ -255,7 +300,7 @@
   button.go:disabled{background:#f0e6d2;color:#a297bd;font-size:12px;font-weight:700;line-height:1.35;cursor:not-allowed;
                      border:2.5px solid #cbc2a9;box-shadow:0 3px 0 #cbc2a9;transform:none}
   .dayhd{font-size:11px;color:var(--dim);letter-spacing:.06em;margin:2px 0 8px;border-bottom:1px solid var(--line);padding-bottom:4px}
-  .daytabs{padding:8px 12px 0}
+  .daytabs{padding:10px 10px 8px;flex:0 0 auto}
   .daytabs:empty{display:none}
   .daytabs button b{font-weight:700;opacity:.75}
   .daytabs .dw{font-size:10px;opacity:.7;margin-left:2px}
@@ -267,9 +312,12 @@
   .stam{margin-top:0}
   .stambar{padding:9px 10px 7px;border-bottom:2px dashed #d9cdae;flex:0 0 auto}
   .stambar:empty{display:none}
-  .stam .bar{position:relative;height:14px;background:#f3e6cb;border:2px solid var(--ink);border-radius:999px;overflow:hidden}
+  .stam .bar{position:relative;height:14px;background:#e6d8bb;border:2px solid var(--ink);border-radius:999px;overflow:hidden;
+             box-shadow:inset 0 2px 3px rgba(59,50,97,.18)}
   .stam .bar i{position:absolute;left:0;top:0;height:100%;border-radius:999px;z-index:2;
                background:linear-gradient(180deg,#3fd68f,var(--ok))}
+  .stam .bar i.joy{background:linear-gradient(180deg,#ffb3cd,var(--acc))}
+  .stam .bar i.joy.done{background:linear-gradient(180deg,#ffd76b,#ffb02e)}
   .stam .bar i.low{background:linear-gradient(180deg,#ffc76b,var(--warn))}
   .stam .bar i.out{background:linear-gradient(180deg,#ff8a8a,var(--bad));width:100%!important}
   .stam .s{display:block;margin-top:3px}
@@ -279,8 +327,23 @@
   dialog::backdrop{background:rgba(59,50,97,.42);backdrop-filter:blur(4px)}
   dialog h3{margin:0 0 6px;font-size:20px}
   .stars{display:flex;justify-content:center;gap:8px;margin:10px 0}
-  .stars .ic{width:38px;height:38px;stroke:#c9d2dc;stroke-width:1.6}
+  .stars .ic{width:38px;height:38px;stroke:#c9d2dc;stroke-width:1.6;opacity:0;transform:scale(.35) rotate(-40deg);
+             transition:opacity .26s,transform .34s cubic-bezier(.34,1.56,.64,1)}
+  .stars .ic.in{opacity:1;transform:none}
   .stars .ic.on{fill:#f5a524;stroke:#d98c00}
+  /* 결과 연출: 게이지 → 별 → 항목 → 경험치 순으로 하나씩 들어온다 */
+  .rbar{position:relative;height:17px;background:#f3e6cb;border:2.5px solid var(--ink);border-radius:999px;overflow:hidden}
+  .rbar i{display:block;height:100%;width:0;border-radius:999px;transition:width .85s cubic-bezier(.22,1,.36,1)}
+  .rbar i.sc{background:linear-gradient(180deg,#ffd76b,#ffb02e)}
+  .rbar i.xp{background:repeating-linear-gradient(-45deg,#ff8fb2 0 6px,#ff6f9c 6px 12px)}
+  .rbar u{position:absolute;top:0;bottom:0;width:2px;background:rgba(59,50,97,.3)}
+  .rcap{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:5px}
+  .rline{display:flex;justify-content:space-between;font-size:13.5px;padding:5px 3px;border-bottom:1px dashed var(--line);
+         opacity:0;transform:translateY(7px);transition:opacity .28s,transform .28s}
+  .rline.in{opacity:1;transform:none}
+  .rlv,.rbtns{opacity:0;transform:translateY(9px);transition:opacity .3s,transform .3s}
+  .rlv.in,.rbtns.in{opacity:1;transform:none}
+  .rlv{margin-top:9px;color:var(--acc);font-weight:800;font-size:15px}
   .ic.ok{color:var(--ok)}
   .empty{color:var(--dim);font-size:12px;text-align:center;padding:30px 10px}
 </style>
@@ -342,6 +405,10 @@
   <symbol id="i-landmark" viewBox="0 0 24 24"><path d="M10 18v-7" /> <path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z" /> <path d="M14 18v-7" /> <path d="M18 18v-7" /> <path d="M3 22h18" /> <path d="M6 18v-7" /></symbol>
   <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M10 2v2" /> <path d="M14 2v2" /> <path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1" /> <path d="M6 2v2" /></symbol>
   <symbol id="i-tram-front" viewBox="0 0 24 24"><rect width="16" height="16" x="4" y="3" rx="2" /> <path d="M4 11h16" /> <path d="M12 3v8" /> <path d="m8 19-2 3" /> <path d="m18 22-2-3" /> <path d="M8 15h.01" /> <path d="M16 15h.01" /></symbol>
+  <symbol id="i-footprints" viewBox="0 0 24 24"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z" /> <path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z" /> <path d="M16 17h4" /> <path d="M4 13h4" /></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" /> <path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" /> <path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" /> <path d="M4 22h16" /> <path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /> <path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" /></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7" /> <path d="M12 19V5" /></symbol>
+  <symbol id="i-circle-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <line x1="12" x2="12" y1="8" y2="12" /> <line x1="12" x2="12.01" y1="16" y2="16" /></symbol>
 </svg>
 <header>
   <h1><svg class="ic big"><use href="#i-compass"/></svg> 여행설계사</h1>
@@ -355,7 +422,7 @@
   </div>
   <span class="grow"></span>
   <span class="chip">Lv.<b id="lv">1</b></span>
-  <span class="buffbar" id="buffbar"></span>
+  <button class="chip" id="buffbtn" title="획득한 버프" disabled></button>
   <div class="xpbar"><i id="xpfill" style="width:0%"></i></div>
   <span class="s" id="xptxt">0 XP</span>
 </header>
@@ -380,33 +447,32 @@
       <button data-tab="food">식당</button>
       <button data-tab="stay">숙소</button>
     </div>
+    <div class="tabs" id="subfilters" hidden></div>
     <div id="gulist" hidden></div>
   </div>
 
   <!-- 지도에서 장소를 클릭하면 뜨는 상세 정보 -->
   <div id="poipop" hidden></div>
+  <!-- 레벨 옆 버프 버튼이 여는 목록 -->
+  <div id="buffpop" hidden></div>
 <div id="toasts"></div>
 
   <!-- 우: 일정 (지도 위 레이어) -->
   <div class="panel right" id="pright">
     <div class="fold" data-fold="pright"><svg class="ic"><use href="#i-chevron-right"/></svg></div>
-    <div class="rcols">
-      <!-- 왼쪽: 타임라인만 -->
-      <div class="tlcol">
-        <div class="stambar" id="stambar"></div>
-        <div class="scroll" id="plan"></div>
+    <!-- 타임라인 왼쪽에 떠 있는 단독 팝업 두 개 -->
+    <div class="lpops">
+      <div class="lpop" id="infopop">
+        <div class="gauges" id="gauges"></div>
+        <div id="stats"></div>
       </div>
-      <!-- 오른쪽: 일정 정보 + 합계 + 제출 -->
-      <div class="infocol">
-        <div class="infoscroll">
-          <div class="row" style="padding:12px 12px 0"><h2 style="margin:0">일정표</h2></div>
-          <div class="arrbar" id="arrbar"></div>
-          <div class="tabs daytabs" id="daytabs"></div>
-          <div class="edit" id="edit"></div>
-        </div>
-        <footer id="sum"></footer>
-      </div>
+      <div class="lpop" id="editpop" hidden><div class="edit" id="edit"></div></div>
     </div>
+    <!-- 일차 탭 · 체크아웃 · 타임라인 · 제출 -->
+    <div class="tabs daytabs" id="daytabs"></div>
+    <div class="stambar" id="stambar"></div>
+    <div class="scroll" id="plan"></div>
+    <footer id="sum"></footer>
   </div>
 </main>
 
@@ -454,6 +520,8 @@
 <dialog id="result"></dialog>
 
 <script src="data/busan.js"></script>
+<script src="data/subway.js"></script>
+<script src="data/bus.js"></script>
 <script>
 // ─────────────────────────────────────────────────────────────
 // 엔진
@@ -464,23 +532,26 @@ const DAY_START = 540;         // 2일차부터의 기본 기상 시각 (1일차
 
 // ── 체력 ────────────────────────────────────────────────────
 // 이동은 체력을 깎고, 식사는 회복시킨다. 분당 소모량.
-const DRAIN_MOVE = { bus: .25, subway: .20, taxi: .10, car: .13 };   // 버스가 가장 고됨
+const DRAIN_MOVE = { walk: .45, bus: .25, subway: .20, taxi: .10, car: .13 };   // 도보가 가장 고됨
 const DRAIN_STAY = { sight: .16, food: -.15, stay: 0 };     // 식사는 회복 (카페는 아래에서 절반)
 // ── 영구 버프 ────────────────────────────────────────────────
 // 레벨이 오를 때마다 2종 중 1개를 골라 영구히 얻는다. 효과는 compute() 안에서 적용.
+// uses = 의뢰 한 판에서 쓸 수 있는 횟수. 앞에서부터 순서대로 소진된다.
 const BUFFS = {
-  hotelclub:   { name: '제휴 호텔',       ico: 'hotel',    desc: '호텔 숙박비가 5% 저렴해집니다' },
-  transitpass: { name: '지역교통할인패스', ico: 'ticket',   desc: '대중교통비가 하루 최대 6,000원까지만 부과됩니다' },
-  groupticket: { name: '단체 입장권',     ico: 'percent',  desc: '관광지 입장료가 15% 저렴해집니다' },
-  taxicoupon:  { name: '택시 호출 쿠폰',   ico: 'car-taxi-front', desc: '택시 기본요금이 면제됩니다' },
-  rentalclub:  { name: '렌터카 멤버십',   ico: 'car',      desc: '렌터카 일 대여료가 30% 저렴해집니다' },
-  foodie:      { name: '미식가 인맥',     ico: 'utensils', desc: '식당의 만족도가 +2' },
-  guide:       { name: '현지 가이드',     ico: 'sparkles', desc: '관광지의 만족도가 +1' },
-  comfyseat:   { name: '편안한 좌석',     ico: 'armchair', desc: '이동할 때 체력 소모가 25% 줄어듭니다' },
-  sleepwell:   { name: '숙면 안대',       ico: 'moon',     desc: '6시간 30분만 자도 충분히 회복합니다' }
+  hotelclub:   { name: '제휴 호텔',       ico: 'hotel',    uses: 2, unit: '박', desc: '호텔 숙박비 5% 할인' },
+  transitpass: { name: '지역교통할인패스', ico: 'ticket',   uses: 2, unit: '일', desc: '대중교통비 하루 6,000원 상한' },
+  groupticket: { name: '단체 입장권',     ico: 'percent',  uses: 3, unit: '곳', desc: '관광지 입장료 15% 할인' },
+  taxicoupon:  { name: '택시 호출 쿠폰',   ico: 'car-taxi-front', uses: 2, unit: '회', desc: '택시 기본요금 면제' },
+  rentalclub:  { name: '렌터카 멤버십',   ico: 'car',      uses: 1, unit: '일', desc: '렌터카 일 대여료 30% 할인' },
+  foodie:      { name: '미식가 인맥',     ico: 'utensils', uses: 3, unit: '곳', desc: '식당 만족도 +2' },
+  guide:       { name: '현지 가이드',     ico: 'sparkles', uses: 3, unit: '곳', desc: '관광지 만족도 +1' },
+  comfyseat:   { name: '편안한 좌석',     ico: 'armchair', uses: 4, unit: '구간', desc: '이동 체력 소모 25% 감소' },
+  sleepwell:   { name: '숙면 안대',       ico: 'moon',     uses: 1, unit: '박', desc: '6시간 30분만 자도 충분히 회복' }
 };
 
 const SLEEP_FULL = 480;        // 충분한 수면(8시간). 이보다 적으면 다음날 체력 한계가 준다.
+// 숙소 등급별 회복 효율. 호텔은 같은 시간을 자도 다음날 체력 한계가 8% 높다.
+const SLEEP_TIER = { guesthouse: .94, motel: 1, hotel: 1.08 };
 const EARLY = [240, 480];      // 야행성이 힘들어하는 새벽 구간 (04:00~08:00)
 
 // 구간 [a,b] 중 새벽 시간대에 걸친 분
@@ -504,10 +575,12 @@ function drain(rate, a, b, type, isMove, buff) {
   return v;
 }
 const TRANSPORT = {
-  bus:    { name: '버스',    ico: 'bus',            kmh: 18, extra: 8,  fare: (km, p) => 1500 * p },
-  subway: { name: '지하철',  ico: 'tram-front',     kmh: 26, extra: 6,  fare: (km, p) => 1600 * p },
-  taxi:   { name: '택시',    ico: 'car-taxi-front', kmh: 24, extra: 2,  fare: (km, p) => Math.ceil(p / 4) * (4800 + Math.max(0, km - 2) * 1000) },
-  car:    { name: '렌터카',  ico: 'car',            kmh: 28, extra: 10, fare: (km) => km * 200 }
+  // walk = 정류장·역·주차장까지 걷는 시간, wait = 배차·호출·주차 대기. 둘의 합이 이동시간에 붙는다.
+  walk:   { name: '도보',    ico: 'footprints',     kmh: 4.5, walk: 0, wait: 0, fare: () => 0 },
+  bus:    { name: '버스',    ico: 'bus',            kmh: 18, walk: 5, wait: 3, fare: (km, p) => 1500 * p },
+  subway: { name: '지하철',  ico: 'tram-front',     kmh: 26, walk: 4, wait: 2, fare: (km, p) => 1600 * p },
+  taxi:   { name: '택시',    ico: 'car-taxi-front', kmh: 24, walk: 0, wait: 2, fare: (km, p) => Math.ceil(p / 4) * (4800 + Math.max(0, km - 2) * 1000) },
+  car:    { name: '렌터카',  ico: 'car',            kmh: 28, walk: 3, wait: 7, fare: (km) => km * 200 }
 };
 const PUBLIC = ['bus', 'subway'];            // 교통패스가 적용되는 대중교통
 
@@ -547,9 +620,105 @@ function km(a, b) { // haversine
 // ponytail: 직선거리×보정계수 근사. 실 API(카카오/TMap)로 바꾸려면 이 함수만 교체하면 됨.
 function travel(a, b, mode, people, depart, weekend) {
   const t = TRANSPORT[mode], d = km(a, b) * DETOUR;
-  const base = Math.round(d / t.kmh * 60) + t.extra;
-  const f = rushFactor(mode, depart, base, weekend);
-  return { min: Math.round(base * f), base, rush: f > 1, km: d, cost: Math.round(t.fare(d, people)) };
+  const ride = Math.round(d / t.kmh * 60);
+  // 언덕 위·노선에서 먼 곳은 정류장에서 문 앞까지가 유난히 멀다(POI 의 access, 분).
+  // 대중교통에만 붙는다 — 택시·렌터카는 문 앞까지 가고, 도보는 이미 문 앞까지 걷는다.
+  const acc = PUBLIC.includes(mode) ? (a.access || 0) + (b.access || 0) : 0;
+  // 정체는 주행 구간만 늘린다. 걷고 기다리는 시간은 길이 막혀도 그대로다.
+  const f = rushFactor(mode, depart, ride, weekend);
+  const fixed = t.walk + t.wait + acc;
+  const min = Math.round(ride * f) + fixed;
+  // 도보 수단은 구간 전체가 걷는 시간, 나머지는 정류장까지 접근하는 시간만
+  return { min, base: ride + fixed, rush: f > 1, km: d,
+           walkMin: mode === 'walk' ? min : t.walk + acc,
+           waitMin: t.wait, cost: Math.round(t.fare(d, people)) };
+}
+
+// ── 지하철 경로 안내 (data/subway.js) ──────────────────────────
+// 실제 노선·역 순서로 "1호선 자갈치역 → 서면역 환승 → 2호선 해운대역" 을 만든다.
+// 지금은 표시 전용이다 — travel() 의 소요시간에는 아직 반영하지 않는다.
+// 환승 1회 = 5정거장 값. 3으로 두면 부산역→해운대를 연산·수영 2회 환승으로 잡는다 —
+// 정거장 수는 적지만 실제로 아무도 그렇게 안 간다. 5면 서면 1회 환승이 이긴다.
+const TRANSFER_COST = 5;
+const stName = k => k + '역';            // 데이터는 "역" 을 뗀 키로 들고 있다
+function subwayOf(region) { return REGIONS[region || S.region].subway; }
+// 어떤 지점에서 가장 가까운 역
+function nearestStation(p, region) {
+  const sw = subwayOf(region); if (!sw || !p) return null;
+  let best = null;
+  for (const k in sw.pos) {
+    const d = km(p, { lat: sw.pos[k][0], lng: sw.pos[k][1] });
+    if (!best || d < best.km) best = { st: k, km: d };
+  }
+  return best;
+}
+// 역|노선 을 노드로 둔 그래프. 인접역 1, 같은 역의 다른 노선(환승) TRANSFER_COST.
+function subwayGraph(region) {
+  const sw = subwayOf(region); if (!sw) return null;
+  if (sw._g) return sw._g;               // 노선표는 안 변하므로 한 번만 만든다
+  const adj = {}, lines = {};
+  const link = (u, v, w) => { (adj[u] = adj[u] || []).push([v, w]); };
+  sw.lines.forEach(L => L.st.forEach((s, i) => {
+    (lines[s] = lines[s] || []).push(L.id);
+    if (i) { const a = s + '|' + L.id, b = L.st[i - 1] + '|' + L.id; link(a, b, 1); link(b, a, 1); }
+  }));
+  for (const s in lines) lines[s].forEach(x => lines[s].forEach(y => { if (x !== y) link(s + '|' + x, s + '|' + y, TRANSFER_COST); }));
+  return (sw._g = { adj, lines });
+}
+// 두 지점 사이 지하철 경로. 노선별 구간과 환승 횟수를 돌려준다.
+function subwayPath(a, b, region) {
+  const sw = subwayOf(region), g = subwayGraph(region);
+  if (!sw || !g) return null;
+  const A = nearestStation(a, region), B = nearestStation(b, region);
+  if (!A || !B || A.st === B.st) return null;
+  const dist = {}, prev = {};
+  (g.lines[A.st] || []).forEach(l => dist[A.st + '|' + l] = 0);
+  const seen = {};
+  for (;;) {
+    let u = null;
+    for (const k in dist) if (!seen[k] && (u === null || dist[k] < dist[u])) u = k;
+    if (u === null) break;
+    seen[u] = 1;
+    for (const [v, w] of (g.adj[u] || [])) {
+      if (dist[v] === undefined || dist[u] + w < dist[v]) { dist[v] = dist[u] + w; prev[v] = u; }
+    }
+  }
+  let end = null;
+  (g.lines[B.st] || []).forEach(l => { const k = B.st + '|' + l;
+    if (dist[k] !== undefined && (end === null || dist[k] < dist[end])) end = k; });
+  if (end === null) return null;
+  const path = []; for (let n = end; n; n = prev[n]) path.unshift(n);
+  // 같은 노선끼리 묶어 구간으로 만든다
+  const legs = [];
+  path.forEach(n => {
+    const [st, line] = n.split('|');
+    const last = legs[legs.length - 1];
+    if (last && last.line === line) { last.to = st; last.stops++; }
+    else legs.push({ line, from: st, to: st, stops: 0 });
+  });
+  const real = legs.filter(l => l.stops > 0);          // 환승만 하고 안 탄 구간은 뺀다
+  if (!real.length) return null;
+  const nameOf = id => (sw.lines.find(L => L.id === id) || {}).name || id + '호선';
+  return { legs: real.map(l => ({ ...l, name: nameOf(l.line), color: (sw.lines.find(L => L.id === l.line) || {}).color })),
+           transfers: real.length - 1,
+           stops: real.reduce((s, l) => s + l.stops, 0),
+           fromSt: A.st, toSt: B.st, walkFrom: A.km, walkTo: B.km };
+}
+// "1호선 부산역→서면역 · 2호선 서면역→해운대역" 형태의 한 줄 요약
+const subwayText = p => !p ? ''
+  : p.legs.map(l => `${l.name} ${stName(l.from)}→${stName(l.to)}`).join(' · ');
+
+// ── 버스 노선 안내 (data/bus.js) ───────────────────────────────
+// 두 곳을 모두 지나는 노선이 곧 직통이다. 경로 탐색이 아니라 경유 노선 집합의 교집합이라
+// 직통이 없으면 환승 조합은 못 찾는다 — 그때는 정류장만 알려준다. 지하철과 같이 표시 전용.
+function busOf(p, region) {
+  const B = REGIONS[region || S.region].bus;
+  return (B && p && (B.near[p.id] || B.starts[p.id])) || null;
+}
+function busPair(a, b, region) {
+  const A = busOf(a, region), Z = busOf(b, region);
+  if (!A || !Z || A.s === Z.s) return null;
+  return { from: A, to: Z, direct: A.r.filter(n => Z.r.includes(n)) };
 }
 
 // 손님이 고른 도착 교통편. 없으면 그 출발지의 첫 번째.
@@ -582,10 +751,14 @@ function compute(state) {
                               : d * 1440 + ((state.wake || {})[d] ?? DAY_START);
   let cur = wakeAt(0), day = 0, prev = startPoint(state);
   let spend = 0, moveMin = 0, joy = 0, stays = 0;
+  const bills = [];                 // 경비 내역 — 총 경비를 눌렀을 때 펼치는 목록
   const carDays = new Set(), rows = [], bad = [], visited = new Set();
 
-  // 영구 버프
+  // 버프: 보유 여부(has)와 별도로, 쓸 때마다 횟수를 깎는 use() 를 쓴다.
   const has = id => (state.buffs || []).includes(id);
+  const left = {};
+  (state.buffs || []).forEach(b => { if (BUFFS[b]) left[b] = BUFFS[b].uses; });
+  const use = id => { if (left[id] > 0) { left[id]--; return true; } return false; };
   const sleepNeed = has('sleepwell') ? 390 : SLEEP_FULL;
   const transitDay = {};                       // 교통패스 상한 계산용
 
@@ -593,7 +766,7 @@ function compute(state) {
   const type = q ? q.staminaType : 'energizer';
   const full = q ? q.stamina : 100;
   let cap = full, stam = full;
-  if (arr) stam -= drain(arr.per === 'car' ? .14 : .08, wakeAt(0) - arr.min, wakeAt(0), type, true, has);
+  if (arr) stam -= drain(arr.drain ?? .08, wakeAt(0) - arr.min, wakeAt(0), type, true, null);
   const dayStat = [{ cap, start: stam, low: stam }];
   const useStam = v => { stam = Math.min(cap, stam - v); dayStat[day].low = Math.min(dayStat[day].low, stam); };
 
@@ -617,23 +790,28 @@ function compute(state) {
     let payFor = p.type === 'stay' ? Math.ceil(people / 2) : people;
     let placeCost = p.cost * payFor;
     if (p.type === 'stay' && R.weekendStay.days.includes(dow)) placeCost *= R.weekendStay.rate;   // 금·토 할증
-    if (has('hotelclub') && p.type === 'stay' && p.tier === 'hotel') placeCost *= .95;
-    if (has('groupticket') && p.type === 'sight') placeCost *= .85;
+    if (p.type === 'stay' && p.tier === 'hotel' && has('hotelclub') && use('hotelclub')) placeCost *= .95;
+    if (p.type === 'sight' && p.cost > 0 && has('groupticket') && use('groupticket')) placeCost *= .85;
     let legCost = t.cost;
-    if (has('taxicoupon') && e.mode === 'taxi') legCost = Math.max(0, legCost - 4800 * Math.ceil(people / 4));
+    if (e.mode === 'taxi' && has('taxicoupon') && use('taxicoupon')) legCost = Math.max(0, legCost - 4800 * Math.ceil(people / 4));
     if (PUBLIC.includes(e.mode)) transitDay[day] = (transitDay[day] || 0) + legCost;
     placeCost = Math.round(placeCost); legCost = Math.round(legCost);
     spend += placeCost + legCost;
+    if (legCost) bills.push({ day, what: `${p.name} 이동`, ico: TRANSPORT[e.mode].ico, amt: legCost });
+    if (placeCost) bills.push({ day, what: p.name, ico: p.type === 'stay' ? 'bed-double' : p.type === 'food' ? 'utensils' : 'ticket', amt: placeCost });
     if (e.mode === 'car') carDays.add(day);
     moveMin += t.min;
     // 같은 숙소 연박은 매번 만족도를 주지만, 관광지·식당 재방문은 첫 방문만 인정
     if (p.type === 'stay' || !visited.has(p.id))
-      joy += p.joy + (has('foodie') && p.type === 'food' ? 2 : 0) + (has('guide') && p.type === 'sight' ? 1 : 0)
+      joy += p.joy
+           + (p.type === 'food' && has('foodie') && use('foodie') ? 2 : 0)
+           + (p.type === 'sight' && has('guide') && use('guide') ? 1 : 0)
            + (likesSub(q, p) ? 3 : 0);
     visited.add(p.id);
 
     // 체력: 이동으로 깎이고, 머무는 동안 종류에 따라 깎이거나 회복된다
-    const dMove = drain(DRAIN_MOVE[e.mode], cur, arrive, type, true, has);
+    const dMove = drain(DRAIN_MOVE[e.mode], cur, arrive, type, true, null)
+                  * (has('comfyseat') && use('comfyseat') ? .75 : 1);
     const dStay = drain(DRAIN_STAY[p.type] * (p.type === 'food' && p.sub === 'cafe' ? .5 : 1), begin, end, type, false, has);
     useStam(dMove); useStam(dStay);
 
@@ -646,7 +824,9 @@ function compute(state) {
       // 취침 → 수면 시간만큼 회복. 부족하면 다음날 한계 자체가 준다.
       const bed = arrive, nextWake = wakeAt(day + 1), sleep = Math.max(0, nextWake - bed);
       const bedRel = bed - day * 1440;
-      let next = full * Math.max(.5, Math.min(1.1, sleep / sleepNeed));
+      const need = (has('sleepwell') && use('sleepwell')) ? 390 : SLEEP_FULL;
+      // 잠자리가 좋을수록 같은 시간을 자도 더 회복한다 — 비싼 숙소가 만족도 말고도 값어치를 갖게.
+      let next = full * Math.max(.5, Math.min(1.1, sleep / need)) * (SLEEP_TIER[p.tier] || 1);
       if (type === 'morning' && bedRel > 1380)          // 23시 넘겨 자면 아침형은 추가 손해
         next -= full * .04 * Math.ceil((bedRel - 1380) / 30);
       stays++; day++;
@@ -663,17 +843,37 @@ function compute(state) {
     const homePt = startPoint(state), bd = dowOf(q, day);
     const t = travel(prev, homePt, state.ret.mode, people, cur, isWeekend(bd));
     spend += t.cost; moveMin += t.min;
+    if (t.cost) bills.push({ day, what: `${homePt.name} 귀가 이동`, ico: TRANSPORT[state.ret.mode].ico, amt: Math.round(t.cost) });
     useStam(drain(DRAIN_MOVE[state.ret.mode], cur, cur + t.min, type, true, has));
     back = { leg: t, mode: state.ret.mode, day, begin: cur, end: cur + t.min, name: homePt.name };
-    if (back.end > day * 1440 + 1440) bad.push('귀가가 자정을 넘깁니다');
+    // 손님마다 그날 몇 시까지 돌아와야 하는지가 정해져 있다
+    const due = day * 1440 + (q.endBy || 1440);
+    if (back.end > due) bad.push(`귀가 마감 ${hhmm(q.endBy || 1440)} 초과 (${hhmm(back.end)} 도착)`);
+    // 집까지 가는 도시간 귀가편. 요금을 왕복으로 걷으니(아래 inter) 시간도 같이 센다.
+    // 마감은 출발지점 도착 기준이라 이 구간은 마감 판정에 넣지 않는다.
+    if (arr) { moveMin += arr.min; back.home = { min: arr.min, name: q.from, ico: arr.ico, via: arr.name }; }
   }
 
   // 자차로 왔으면 여행 내내 그 차를 쓰므로 렌터카 대여료가 없다
-  spend += (arr && arr.per === 'car' ? 0 : carDays.size * CAR_DAILY * (has('rentalclub') ? .7 : 1));
+  // 렌터카 일 대여료 — 멤버십은 정해진 일수만큼만 할인
+  if (!(arr && arr.per === 'car'))
+    [...carDays].sort((a, b) => a - b).forEach(d => {
+      const c = CAR_DAILY * (has('rentalclub') && use('rentalclub') ? .7 : 1);
+      spend += c;
+      bills.push({ day: d, what: '렌터카 대여료', ico: 'car', amt: Math.round(c) });
+    });
   // 교통패스: 대중교통비는 하루 6,000원을 넘지 않는다
-  if (has('transitpass')) Object.values(transitDay).forEach(v => { spend -= Math.max(0, v - 6000); });
+  if (has('transitpass')) Object.keys(transitDay).sort((a, b) => a - b).forEach(d => {
+    if (!use('transitpass')) return;
+    const cut = Math.max(0, transitDay[d] - 6000);
+    spend -= cut;
+    if (cut) bills.push({ day: +d, what: '교통패스 상한', ico: 'ticket', amt: -Math.round(cut) });
+  });
   spend = Math.round(spend);
-  spend += arrivalCost(state);
+  const inter = arrivalCost(state) * (state.ret ? 2 : 1);   // 귀가편까지 정하면 왕복 요금
+  spend += inter;
+  if (inter) bills.unshift({ day: 0, what: `${arr ? arr.name : '도착 교통편'}${state.ret ? ' 왕복' : ''}`,
+                             ico: arr ? arr.ico : 'map-pin', amt: Math.round(inter) });
 
   // 제약 검사
   if (q) {
@@ -682,7 +882,7 @@ function compute(state) {
     const sights = new Set(state.plan.filter(e => poi(e.id).type === 'sight').map(e => e.id)).size;
     if (sights < q.minSights) bad.push(`관광지 ${q.minSights}곳 이상 필요 (현재 ${sights})`);
     if (stays !== q.days - 1) bad.push(`숙소는 ${q.days - 1}곳 필요 (현재 ${stays})`);
-    if (spend > q.budget) bad.push(`예산 초과 ${won(spend - q.budget)}`);
+
     (q.banModes || []).forEach(m => {
       if (state.plan.some(e => e.mode === m)) bad.push(`${TRANSPORT[m].name} 이용 불가 의뢰`);
     });
@@ -697,8 +897,11 @@ function compute(state) {
   }
 
   const budget = q ? q.budget : 0;
-  const score = Math.round(joy * 10 - moveMin * 1.0 + (budget ? (budget - spend) / budget * 100 : 0));
-  return { rows, spend, moveMin, joy, score, bad, days: day + 1, dayStat, full, type, back };
+  // 예산이 남으면 보너스, 넘기면 두 배로 감점 (제출은 막지 않는다)
+  const ratio = budget ? (budget - spend) / budget : 0;
+  const score = Math.round(joy * 10 - moveMin * 1.0 + ratio * (ratio >= 0 ? 100 : 200));
+  const over = Math.max(0, spend - budget);
+  return { rows, spend, moveMin, joy, score, bad, over, left, days: day + 1, dayStat, full, type, back, bills };
 }
 
 function stars(score, par) { return score >= par * 1.25 ? 3 : score >= par ? 2 : score >= par * 0.75 ? 1 : 0; }
@@ -707,7 +910,7 @@ function stars(score, par) { return score >= par * 1.25 ? 3 : score >= par ? 2 :
 // 상태
 // ─────────────────────────────────────────────────────────────
 const SAVE = 'travelgame.v1';
-const S = Object.assign({ region: 'busan', quest: null, plan: [], startMin: 540, startId: null, buffs: [], sel: null, pop: null, gu: null, day: 0, arriveId: null, ret: null, wake: {}, tab: 'all', xp: 0, cleared: [] },
+const S = Object.assign({ region: 'busan', quest: null, plan: [], startMin: 540, startId: null, buffs: [], sel: null, pop: null, gu: null, day: 0, arriveId: null, ret: null, wake: {}, tab: 'all', sub: null, xp: 0, cleared: [] },
   JSON.parse(localStorage.getItem(SAVE) || '{}'));
 S.plan = S.plan || [];
 
@@ -719,6 +922,56 @@ const SUBT = p => REGIONS[S.region].sightTypes[p.sub] || { name: '관광지', ic
 const FOODT = p => REGIONS[S.region].foodTypes[p.sub] || { name: '식당', ico: 'utensils' };
 // 지금 보고 있는 일차에 이 장소가 쉬는가
 const isClosedToday = p => !!(p.closed && S.quest && p.closed.includes(dowOf(S.quest, S.day)));
+// 이동시간 안에 걷는 시간이 얼마나 섞였는지. 실제 노선 데이터가 없어 정류장 접근 시간만 센다.
+// title 속성(순수 텍스트)에도 그대로 쓰므로 아이콘 없이 글자만 낸다.
+const walkNote = leg => leg.walkMin ? ` · 도보 ${leg.walkMin}분 포함` : '';
+
+// ── 표시 필터 (대분류 S.tab → 세부 S.sub) ─────────────────────
+// 숙소는 sub 가 없어 등급(tier)을 세부 타입으로 쓴다.
+const subKey = p => p.type === 'stay' ? p.tier : p.sub;
+function subTypes() {
+  const R2 = REGIONS[S.region];
+  if (S.tab === 'sight') return R2.sightTypes;
+  if (S.tab === 'food') return R2.foodTypes;
+  if (S.tab === 'stay') return { guesthouse: { name: TIER_NAME.guesthouse, ico: 'bed-double' },
+                                 motel:      { name: TIER_NAME.motel,      ico: 'bed-double' },
+                                 hotel:      { name: TIER_NAME.hotel,      ico: 'hotel' } };
+  return null;   // 전체 탭에는 세부 필터가 없다
+}
+const inFilter = p => (S.tab === 'all' || p.type === S.tab) && (!S.sub || subKey(p) === S.sub);
+
+// 넣을 수 있는지 판단할 때 쓰는 문맥. 렌더당 한 번만 만들고 장소마다 재사용한다
+// (장소마다 compute() 를 다시 돌리면 지도 드래그 프레임이 죽는다).
+function blockCtx() {
+  const q = S.quest; if (!q) return null;
+  const day = S.day, i = insertAtDay(day), rows = compute(S).rows;
+  const pr = i > 0 ? rows[i - 1] : null;
+  const depart = pr && pr.poi.type !== 'stay' ? pr.end : day * 1440 + (day === 0 ? wakeOf(0) : wakeOf(day));
+  return {
+    q, day, depart,
+    prev: i > 0 ? poi(S.plan[i - 1].id) : startPoint(S),
+    wknd: isWeekend(dowOf(q, day)),
+    dow: dowOf(q, day),
+    modes: Object.keys(TRANSPORT).filter(k => !(q.banModes || []).includes(k))
+  };
+}
+
+// 넣을 수 없으면 이유 문자열, 넣을 수 있으면 null.
+// 가장 빠른 수단으로도 영업시간 안에 못 들어가면 불가로 본다.
+function whyBlocked(p, ctx) {
+  ctx = ctx || blockCtx();
+  if (!ctx) return null;
+  if (p.closed && p.closed.includes(ctx.dow)) return `${REGIONS[S.region].dayNames[ctx.dow]}요일 휴무`;
+  if (p.type === 'stay') return null;                 // 숙소는 체크인 시각만 맞으면 됨
+  const fastest = Math.min(...ctx.modes.map(k => travel(ctx.prev, p, k, ctx.q.people, ctx.depart, ctx.wknd).min));
+  const arrive = ctx.depart + fastest;
+  const open = ctx.day * 1440 + p.open[0], close = ctx.day * 1440 + p.open[1];
+  const end = Math.max(arrive, open) + p.stay;
+  if (arrive > close) return `영업 종료(${hhmm(p.open[1])}) 후에야 도착`;
+  if (end > close) return `영업 종료(${hhmm(p.open[1])}) 전에 못 나옴`;
+  if (end > ctx.day * 1440 + 1440) return '자정을 넘김';
+  return null;
+}
 // 지도 핀 안에 그릴 아이콘 — 색은 대분류, 아이콘은 세부 타입을 나타낸다
 const pinIcon = p => p.type === 'sight' ? SUBT(p).ico
                    : p.type === 'food' ? FOODT(p).ico
@@ -742,19 +995,16 @@ function render() {
   $('#xpfill').style.width = (S.xp % 120) / 120 * 100 + '%';
   $('#xptxt').textContent = S.xp + ' XP';
   document.querySelectorAll('#filters [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
-  $('#buffbar').innerHTML = S.buffs.map(b => BUFFS[b]
-    ? `<span class="bchip" title="${esc(BUFFS[b].name)} — ${esc(BUFFS[b].desc)}">${ic(BUFFS[b].ico)}</span>` : '').join('');
-
-  // 도착 교통편 요약 (일정표 상단)
-  const arr = arrival(S), home = startPoint(S);
-  $('#arrbar').innerHTML = arr ? `
-    <div class="arrline"><span class="k">${ic('map-pin')} 출발</span><b>${esc(S.quest.from)}</b></div>
-    <div class="arrline"><span class="k">${ic(arr.ico)} 수단</span><b>${esc(arr.name)}</b></div>
-    <div class="arrline"><span class="k">${ic('flag')} 도착</span><b>${esc(home.name)} ${hhmm(arr.arrive)}</b></div>
-    <div class="arrline"><span class="k">${ic('wallet')} 이동비</span><b>${won(arrivalCost(S))}</b></div>
-    <div class="s arrnote">${arr.per === 'car' ? '자차 · 여행 중 렌터카비 없음' : `${won(arr.cost)} × ${S.quest.people}인`}</div>
-    <button class="mini wide" data-act="trip">교통편 변경</button>`
-    : '<span class="s">의뢰를 선택하세요</span>';
+  const subs = subTypes();
+  $('#subfilters').hidden = !subs;
+  if (subs) $('#subfilters').innerHTML = `<button data-sub="" class="${S.sub ? '' : 'on'}">전체</button>`
+    + Object.entries(subs).map(([k, t]) =>
+        `<button data-sub="${k}" class="${S.sub === k ? 'on' : ''}">${ic(t.ico)}${esc(t.name)}</button>`).join('');
+  const bn = S.buffs.filter(b => BUFFS[b]).length;
+  $('#buffbtn').innerHTML = `${ic('sparkles')} 버프 ${bn}`;
+  $('#buffbtn').disabled = !bn;
+  if (!bn) $('#buffpop').hidden = true;
+  if (!$('#buffpop').hidden) renderBuffPop();
 
   // 의뢰 선택 목록 (시작 화면)
   $('#quests').innerHTML = R.quests.map(q => {
@@ -765,7 +1015,7 @@ function render() {
       <div class="s">${lock ? `${ic("lock")} Lv.${q.lv} 부터 열립니다` : esc(q.desc)}</div>
       ${lock ? '' : `<div class="s" style="margin-top:5px">${ic("wallet")} ${won(q.budget)} · ${ic("calendar-days")} ${q.days}일 · ${ic("users")} ${q.people}인 · ${ic("target")} 관광 ${q.minSights}곳+
         ${q.banModes ? ` · ${ic("ban")} ` + q.banModes.map(m => TRANSPORT[m].name).join('/') : ''}
-        ${q.minStayTier ? ` · ${ic("hotel")} ` + TIER_NAME[q.minStayTier] + ' 이상' : ''}</div>
+        ${q.minStayTier ? ` · ${ic("hotel")} ` + TIER_NAME[q.minStayTier] + ' 이상' : ''}${q.endBy ? ` · ${ic("clock")} ${hhmm(q.endBy)}까지 귀가` : ''}</div>
         <div class="s" style="margin-top:3px">${ic("star")} 필수: ${q.must.map(id => esc(poi(id).name)).join(', ')}</div>
         <div class="s">${ic(ST(q).ico)} ${ST(q).name} · 체력 ${q.stamina} — ${esc(ST(q).desc)}</div>
         <div class="s">${ic('heart')} ${esc(q.age)} — ${esc(AT(q).desc)}</div>`}
@@ -778,7 +1028,7 @@ function render() {
   $('#active').innerHTML = q ? `<div class="card on">
       <div class="t" style="font-size:15px">${esc(q.title)}</div>
       <div class="qline">${ic("wallet")} ${won(q.budget)} · ${ic("calendar-days")} ${q.days}일 · ${ic("users")} ${q.people}인</div>
-      <div class="qline">${ic("target")} 관광 ${q.minSights}곳 · ${ic("bed-double")} 숙소 ${q.days - 1}곳${q.banModes ? ` · ${ic("ban")} ` + q.banModes.map(m => TRANSPORT[m].name).join('/') : ''}${q.minStayTier ? ` · ${ic("hotel")} ` + TIER_NAME[q.minStayTier] + ' 이상' : ''}</div>
+      <div class="qline">${ic("target")} 관광 ${q.minSights}곳 · ${ic("bed-double")} 숙소 ${q.days - 1}곳${q.banModes ? ` · ${ic("ban")} ` + q.banModes.map(m => TRANSPORT[m].name).join('/') : ''}${q.minStayTier ? ` · ${ic("hotel")} ` + TIER_NAME[q.minStayTier] + ' 이상' : ''}${q.endBy ? ` · ${ic("clock")} ${hhmm(q.endBy)}까지 귀가` : ''}</div>
       <div class="qline">${ic("star")} ${q.must.map(id => esc(poi(id).name)).join(", ")}</div>
       <div class="qline" title="${esc(ST(q).desc)}">${ic(ST(q).ico)} ${ST(q).name} · 체력 ${q.stamina}</div>
       <div class="qline" title="${esc(AT(q).desc)}">${ic('heart')} ${esc(q.age)} · ${AT(q).likes.map(k => REGIONS[S.region].sightTypes[k].name).join(', ')} 선호</div>
@@ -912,9 +1162,12 @@ function renderMap() {
   S.plan.forEach((e, i) => { if (!order.has(e.id)) order.set(e.id, i + 1); });
 
   // 원 크기 — 일정에 담긴 곳은 더 크게. 겹치면 서로 밀어내 자리를 잡는다.
+  // 넣을 수 없는 장소를 한 번에 계산해 지도·목록·팝업이 같은 판단을 쓴다
+  const blocked = {}, bctx = blockCtx();
+  if (bctx) R.pois.forEach(p => { const w = whyBlocked(p, bctx); if (w) blocked[p.id] = w; });
   const R_ON = 18, R_OFF = 13;
   const radiusOf = p => order.has(p.id) ? R_ON : R_OFF;
-  const shown = R.pois.filter(p => S.tab === 'all' || p.type === S.tab || order.has(p.id));
+  const shown = R.pois.filter(p => inFilter(p) || order.has(p.id));
   PIN.clear();
   const laid = layoutPins(shown, radiusOf);
   laid.forEach(o => PIN.set(o.p.id, [o.x, o.y]));
@@ -973,9 +1226,9 @@ function renderMap() {
   }
   [...shown].sort((a, b) => (order.has(b.id) ? 1 : 0) - (order.has(a.id) ? 1 : 0)).forEach(p => {
     const [x, y] = at(p), n = order.get(p.id), r = radiusOf(p);
-    const shut = isClosedToday(p);   // 그날 휴무면 색을 빼서 눈에 안 띄게
+    const shut = !!blocked[p.id];    // 넣을 수 없으면 색을 빼고 클릭도 막는다
     const col = shut ? '#9aa7b4' : { sight: '#3d7dff', food: '#ff8a3d', stay: '#a55cff' }[p.type];
-    const tag = `data-poi="${p.id}" style="cursor:pointer" opacity="${shut ? .45 : 1}"`;
+    const tag = `data-poi="${p.id}" style="cursor:${shut ? 'not-allowed' : 'pointer'}" opacity="${shut ? .32 : 1}"`;
     const sel = S.pop === p.id;
 
     const isz = r * 1.15;                        // 원 안에 들어갈 아이콘 크기
@@ -1013,7 +1266,7 @@ function openReturn() {
     if (hasBuff('taxicoupon') && k === 'taxi') fare = Math.max(0, fare - 4800 * Math.ceil(q.people / 4));
     return `<div class="card ${banned ? 'lock' : ''} ${S.ret && S.ret.mode === k ? 'on' : ''}" ${banned ? '' : `data-ret="${k}"`}>
       <div class="t">${ic(t.ico, 'big')} ${t.name}${banned ? ' — 이 의뢰는 이용 불가' : ''}</div>
-      <div class="s" style="margin-top:4px">${leg.min}분${leg.rush ? ` <b style="color:var(--warn)">(정체 +${leg.min - leg.base}분)</b>` : ''} · ${won(fare)} · ${hhmm(depart + leg.min)} 도착</div>
+      <div class="s" style="margin-top:4px">${leg.min}분${leg.rush ? ` <b style="color:var(--warn)">(정체 +${leg.min - leg.base}분)</b>` : ''} · ${won(fare)}${walkNote(leg)} · ${hhmm(depart + leg.min)} 도착</div>
     </div>`;
   }).join('');
   $('#move').showModal();
@@ -1022,7 +1275,7 @@ function openReturn() {
 // 구간 교통수단 선택 ------------------------------------------
 // 넣을 자리 바로 앞 장소에서 이 장소까지의 실제 소요·요금·체력을 비교해 고른다.
 function openMove(id) {
-  const q = S.quest; if (!q) return;
+  const q = S.quest; if (!q || whyBlocked(poi(id))) return;
   const p = poi(id), i = insertAtDay(S.day);
   const from = i > 0 ? poi(S.plan[i - 1].id) : startPoint(S);
   const ban = q.banModes || [];
@@ -1041,7 +1294,7 @@ function openMove(id) {
     const st = drain(DRAIN_MOVE[k], 0, leg.min, q.staminaType, true, hasBuff);
     return `<div class="card ${banned ? 'lock' : ''}" ${banned ? '' : `data-move="${k}" data-poi2="${id}"`}>
       <div class="t">${ic(t.ico, 'big')} ${t.name}${banned ? ' — 이 의뢰는 이용 불가' : ''}</div>
-      <div class="s" style="margin-top:4px">${leg.min}분${leg.rush ? ` <b style="color:var(--warn)">(정체 +${leg.min - leg.base}분)</b>` : ''} · ${leg.km.toFixed(1)}km · ${won(fare)}${k === 'car' ? ' + 일 대여료' : ''}</div>
+      <div class="s" style="margin-top:4px">${leg.min}분${leg.rush ? ` <b style="color:var(--warn)">(정체 +${leg.min - leg.base}분)</b>` : ''} · ${leg.km.toFixed(1)}km · ${won(fare)}${k === 'car' ? ' + 일 대여료' : ''}${walkNote(leg)}</div>
       <div class="s">체력 -${st.toFixed(1)}</div>
     </div>`;
   }).join('');
@@ -1106,6 +1359,7 @@ function reactTo(p, res) {
 // 숫자가 바뀌면 굴러가며 색으로 방향을 알린다
 const PREV = {};
 function countTo(el, key, to, fmt, goodIsDown) {
+  if (!el) return;                   // 표시 항목이 빠져도 render() 전체가 죽지는 않게
   const from = PREV[key];
   PREV[key] = to;
   el.textContent = fmt(to);          // 값은 항상 먼저 확정 — 프레임이 안 돌아도 숫자는 맞다
@@ -1137,11 +1391,25 @@ function flyUp(id, text) {
   el.addEventListener('animationend', () => el.remove());
 }
 
+// 구 목록에서 짚은 장소를 지도에서 강조한다.
+// renderMap() 을 다시 돌리면 핀 129개를 새로 그리게 되므로 클래스만 갈아끼운다.
+let hiId = null;
+function highlight(id) {
+  if (hiId === id) return;
+  hiId = id;
+  document.querySelectorAll('#map .hi, #gulist .hi').forEach(el => el.classList.remove('hi'));
+  if (!id) return;
+  document.querySelectorAll(`#map [data-poi="${id}"]`).forEach(el => el.classList.add('hi'));
+  const row = document.querySelector(`#gulist [data-poi="${id}"]`);
+  if (row) row.classList.add('hi');
+}
+
 // 구 이름을 누르면 그 구의 장소 목록 (좌측 탭 아래)
 function renderGuList() {
   const box = $('#gulist');
+  hiId = null;
   if (!S.gu) { box.hidden = true; return; }
-  const list = REGIONS[S.region].pois.filter(p => p.gu === S.gu);
+  const list = REGIONS[S.region].pois.filter(p => p.gu === S.gu && inFilter(p)), gctx = blockCtx();
   const count = {};
   S.plan.forEach(e => count[e.id] = (count[e.id] || 0) + 1);
   const ICON = { sight: 'camera', food: 'utensils', stay: 'bed-double' };
@@ -1156,18 +1424,18 @@ function renderGuList() {
       if (!rows.length) return '';
       return rows.map(p => {
         const n = count[p.id] || 0;
-        const fav = likesSub(S.quest, p);
-        return `<div class="gurow" data-poi="${p.id}">
+        const fav = likesSub(S.quest, p), blk2 = whyBlocked(p, gctx);
+        return `<div class="gurow ${blk2 ? 'lock' : ''}" data-poi="${p.id}">
           <span class="${fav ? 'fav' : ''}">${ic(p.type === 'sight' ? SUBT(p).ico : p.type === 'food' ? FOODT(p).ico : ICON[t])}</span>
           <span class="gnm">${esc(p.name)}${n ? ` <b style="color:var(--acc)">×${n}</b>` : ''}</span>
-          <span class="s">${isClosedToday(p) ? '<b style="color:var(--bad)">휴무</b>' : (p.cost ? (p.cost / 10000).toFixed(p.cost % 10000 ? 1 : 0) + '만' : '무료')}</span>
+          <span class="s">${blk2 ? '<b style="color:var(--bad)">불가</b>' : (p.cost ? (p.cost / 10000).toFixed(p.cost % 10000 ? 1 : 0) + '만' : '무료')}</span>
         </div>`;
       }).join('');
     }).join('') : '<div class="s" style="padding:10px;text-align:center">등록된 장소가 없습니다</div>'}</div>`;
 }
 
 function openPoi(id) {
-  const p = poi(id), pop = $('#poipop');
+  const p = poi(id), pop = $('#poipop'), blockReason = whyBlocked(p);
   const n = S.plan.filter(e => e.id === id).length;
   const must = S.quest && S.quest.must.includes(id);
   S.pop = id;
@@ -1181,10 +1449,10 @@ function openPoi(id) {
       <h4>${must ? ic("star") + " " : ""}${esc(p.name)}</h4>
       <span class="x" data-act="closepop" style="margin:0">${ic("x")}</span>
     </div>
-    <div class="kv">${meta}${p.closed ? `<br>${ic('calendar-days')} 매주 ${p.closed.map(d => REGIONS[S.region].dayNames[d]).join('·')}요일 휴무` : ''}${p.type === 'stay' ? `<br>${ic('calendar-days')} 금·토 체크인은 40% 할증` : ''}<br>${ic("smile")} 만족도 ${p.joy}${n ? `<br><b style="color:var(--acc)">일정에 ${n}회 포함됨</b>` : ''}</div>
-    ${isClosedToday(p)
-      ? `<div class="kv" style="color:var(--bad)">${ic('triangle-alert')} ${S.day + 1}일차(${REGIONS[S.region].dayNames[dowOf(S.quest, S.day)]})에는 쉽니다</div>
-         <button class="go" data-add="${id}" style="background:var(--panel2);color:var(--dim)">그래도 추가</button>`
+    <div class="kv">${meta}${p.closed ? `<br>${ic('calendar-days')} 매주 ${p.closed.map(d => REGIONS[S.region].dayNames[d]).join('·')}요일 휴무` : ''}${p.type === 'stay' ? `<br>${ic('calendar-days')} 금·토 체크인은 40% 할증`
+      + `<br>${ic('moon')} ${TIER_NAME[p.tier]} — 수면 회복 ${SLEEP_TIER[p.tier] >= 1 ? '+' : ''}${Math.round((SLEEP_TIER[p.tier] - 1) * 100)}%` : ''}<br>${ic("smile")} 만족도 ${p.joy}${n ? `<br><b style="color:var(--acc)">일정에 ${n}회 포함됨</b>` : ''}</div>
+    ${blockReason
+      ? `<div class="kv" style="color:var(--bad)">${ic('circle-alert')} ${S.day + 1}일차에 넣을 수 없습니다 — ${esc(blockReason)}</div>`
       : `<button class="go" data-add="${id}">${ic('plus')} 일정에 추가</button>`}`;
 
   // 핀 옆에 띄우되 화면 밖으로 나가지 않게 잡아둔다
@@ -1225,7 +1493,7 @@ const MINBLK = 16;         // 너무 짧아 안 보이는 블록의 최소 높�
 
 function renderPlan(res) {
   const box = $('#plan');
-  if (!S.quest) { box.innerHTML = `<div class="empty">왼쪽에서 의뢰를 먼저 선택하세요.</div>`; $('#edit').innerHTML = ''; return; }
+  if (!S.quest) { box.innerHTML = `<div class="empty">왼쪽에서 의뢰를 먼저 선택하세요.</div>`; $('#editpop').hidden = true; return; }
 
   const arr = arrival(S);
   // 일차 탭 — 여러 날을 세로로 이어붙이면 스크롤이 길어져서 하루씩 본다
@@ -1241,13 +1509,10 @@ function renderPlan(res) {
   // 그날의 체력 상태와 기상 시각 — 타임라인 바로 위에 함께 둔다
   const st = res.dayStat[S.day];
   const T = REGIONS[S.region].staminaTypes[res.type];
-  $('#stambar').innerHTML = st ? `<div class="stam">
-      <div class="bar"><i style="width:${Math.min(100, Math.max(0, st.low) / st.cap * 100)}%" class="${st.low < 0 ? 'out' : st.low < st.cap * .25 ? 'low' : ''}"></i></div>
-      <span class="s" title="${esc(T.desc)}">${ic(T.ico)} 체력 ${Math.round(st.cap)} → 최저 ${Math.round(st.low)}${st.cap < res.full ? ` · 한계 ${res.full}에서 -${Math.round(res.full - st.cap)}` : ''}</span>
-    </div>
-    <div class="wakerow">${S.day === 0
-      ? `<span class="s">${ic(arr ? arr.ico : 'map-pin')} ${hhmm(wakeOf(0))} 부산 도착 · 1일차 시작</span>`
-      : `<span class="s">${ic('sunrise')} 기상</span>
+  $('#stambar').innerHTML = st ? `<div class="wakerow" style="margin-top:0">${S.day === 0
+      ? `<span class="s">${ic(arr ? arr.ico : 'map-pin')} ${hhmm(wakeOf(0))} 부산 도착</span>
+         <button class="mini" data-act="trip">교통편 변경</button>`
+      : `<span class="s">${ic('sunrise')} 체크아웃</span>
          <select data-wake="${S.day}">${[...Array(15)].map((_, i) => {
            const m = 300 + i * 30;
            return `<option value="${m}" ${m === wakeOf(S.day) ? 'selected' : ''}>${hhmm(m)}</option>`;
@@ -1259,6 +1524,20 @@ function renderPlan(res) {
         : ''}
     </div>
     ${st.sleep != null ? `<div class="s sleepnote">수면 ${Math.floor(st.sleep / 60)}시간 ${st.sleep % 60}분</div>` : ''}` : '';
+
+  // 체력·만족도 게이지. 만족도 목표는 지금 동선·예산으로 ★★★에 필요한 값이라 일정을 고칠 때마다 움직인다.
+  const q0 = S.quest;
+  const bonus = q0.budget ? (q0.budget - res.spend) / q0.budget * 100 : 0;
+  const joyGoal = Math.max(1, Math.ceil((q0.par * 1.25 + res.moveMin - bonus) / 10));
+  const hit = res.joy >= joyGoal;
+  $('#gauges').innerHTML = `${st ? `<div class="stam">
+      <div class="bar"><i style="width:${Math.min(100, Math.max(0, st.low) / st.cap * 100)}%" class="${st.low < 0 ? 'out' : st.low < st.cap * .25 ? 'low' : ''}"></i></div>
+      <span class="s" title="${esc(T.desc)}">${ic(T.ico)} 체력 ${Math.round(st.cap)} → 최저 ${Math.round(st.low)}${st.cap < res.full ? ` · 한계 ${res.full}에서 -${Math.round(res.full - st.cap)}` : ''}</span>
+    </div>` : ''}
+    <div class="stam">
+      <div class="bar"><i class="joy${hit ? ' done' : ''}" style="width:${Math.min(100, res.joy / joyGoal * 100)}%"></i></div>
+      <span class="s">${ic('smile')} 만족도 ${res.joy}${hit ? ' · 목표 달성' : ` · 목표 ${joyGoal}`}</span>
+    </div>`;
 
   let html = '';
   for (let d = S.day; d === S.day; d++) {
@@ -1286,12 +1565,23 @@ function renderPlan(res) {
       html += `<div class="hr ${mn ? 'mn' : on ? '' : 'mid'}" style="top:${y(t)}px">${on ? `<b>${hhmm(t)}</b>` : ''}</div>`;
     }
 
+    // 마지막 날에는 손님이 정한 귀가 마감선을 긋는다
+    if (d === S.quest.days - 1 && S.quest.endBy) {
+      const due = d * 1440 + S.quest.endBy;
+      if (due >= top && due <= t1)
+        html += `<div class="hr due" style="top:${y(due)}px"><b>${hhmm(S.quest.endBy)} 귀가 마감</b></div>`;
+    }
+
     // 마지막 날 끝에 귀가 구간
     if (res.back && res.back.day === d) {
       const bk = res.back, bt = TRANSPORT[bk.mode];
       html += blk('arrive', y(bk.begin), bk.leg.min, -2,
         `${ic(bt.ico)} ${esc(bk.name)} 귀가`, `${bt.name} · ${bk.leg.min}분 · ${won(bk.leg.cost)}`,
         `${bk.name} ${hhmm(bk.end)} 도착`);
+      // 그 뒤 집까지 가는 도시간 귀가편 (1일차 맨 위의 출발 구간과 짝)
+      if (bk.home) html += blk('arrive', y(bk.end), bk.home.min, -3,
+        `${ic(bk.home.ico)} ${esc(bk.home.name)} 도착`, `${bk.home.via} · ${bk.home.min}분`,
+        `${bk.name} ${hhmm(bk.end)} 출발 → ${bk.home.name} ${hhmm(bk.end + bk.home.min)} 도착`);
     }
     rows.forEach(r => {
       const depart = r.arrive - r.leg.min;
@@ -1299,7 +1589,7 @@ function renderPlan(res) {
       // 이동·대기는 왼쪽 트랙, 장소는 오른쪽 트랙 — 짧아도 서로 안 가린다
       html += blk('move lane' + (r.leg.rush ? ' rush' : ''), y(depart), r.leg.min, r.i,
         `${ic(t.ico)} ${r.leg.min}분`, '',
-        `${t.name} ${r.leg.km.toFixed(1)}km · ${r.leg.min}분${r.leg.rush ? ` (정체 +${r.leg.min - r.leg.base}분)` : ''} · ${won(r.leg.cost)}`);
+        `${t.name} ${r.leg.km.toFixed(1)}km · ${r.leg.min}분${r.leg.rush ? ` (정체 +${r.leg.min - r.leg.base}분)` : ''}${walkNote(r.leg)} · ${won(r.leg.cost)}`);
       if (r.wait > 0) html += blk('wait lane', y(r.arrive), r.wait, r.i, `${ic("hourglass")}${r.wait}분`, '',
         `영업 시작까지 대기 ${r.wait}분`);
       // 체류 (숙소는 길이가 0이라 취침 표시로 대체)
@@ -1327,7 +1617,8 @@ function blk(cls, top, mins, i, line1, line2, tip) {
 // 선택한 블록의 편집 스트립. 짧은 블록 안에는 컨트롤이 안 들어가서 따로 뺐다.
 function renderEdit(res) {
   const r = S.sel >= 0 ? res.rows.find(x => x.i === S.sel) : null;
-  if (!r) { $('#edit').innerHTML = `<span class="s">타임라인의 블록을 클릭하면 여기서 이동수단·체류시간을 바꿉니다.</span>`; return; }
+  $('#editpop').hidden = !r;
+  if (!r) return;
   const opts = Object.entries(TRANSPORT).map(([k, t]) =>
     `<option value="${k}" ${r.mode === k ? 'selected' : ''}>${t.name}</option>`).join('');
   $('#edit').innerHTML = `<div class="row">
@@ -1342,17 +1633,102 @@ function renderEdit(res) {
       ${r.poi.type === 'stay' ? `<span class="s">${ic('bed-double')} 취침</span>`
         : `<span class="s">체류</span><input type="number" data-stay="${r.i}" value="${r.stay}" min="10" max="600" step="5"><span class="s">분</span>`}
       <span class="grow"></span><span class="s">${won(r.cost)}</span>
-    </div>`;
+    </div>
+    <div class="s" style="margin-top:4px">${ic(TRANSPORT[r.mode].ico)} ${r.leg.min}분${
+      r.leg.rush ? ` <b style="color:var(--warn)">(정체 +${r.leg.min - r.leg.base}분)</b>` : ''}${
+      r.leg.walkMin ? ` · ${ic('footprints')} 도보 ${r.leg.walkMin}분` : ''}${
+      r.leg.waitMin ? ` · ${ic('hourglass')} 대기 ${r.leg.waitMin}분` : ''}</div>
+    ${subwayLine(res, r)}${busLine(res, r)}`;
+}
+
+// 그 줄이 출발하는 지점. 첫 줄은 출발지, 나머지는 앞 장소.
+function prevPoint(res, r) {
+  const i = res.rows.indexOf(r);
+  return i > 0 ? res.rows[i - 1].poi : startPoint(S);
+}
+
+// 버스를 골랐을 때 두 정류장을 다 지나는 노선 번호. 소요시간에는 안 쓰는 안내용 표시.
+function busLine(res, r) {
+  if (r.mode !== 'bus') return '';
+  const b = busPair(prevPoint(res, r), r.poi);
+  if (!b) return '';
+  const L = REGIONS[S.region].bus.lines;
+  const head = n => (L[n] && L[n].h) ? ` <span style="opacity:.7">${esc(L[n].h)}분</span>` : '';
+  const far = Math.max(b.from.d, b.to.d);              // 정류장이 멀면 안내가 무의미하다
+  return `<div class="s" style="margin-top:4px">
+    ${ic('bus')} ${esc(b.from.s)} → ${esc(b.to.s)}
+    ${b.direct.length
+      ? `· ${b.direct.slice(0, 4).map(n => `<b>${esc(n)}</b>${head(n)}`).join(', ')}`
+      : `<span style="color:var(--warn)">· 직통 노선 없음 — 환승 필요</span>`}
+    ${far > .5 ? `<br><span style="color:var(--warn)">정류장까지 ${far.toFixed(1)}km — 걸어서 갈 거리가 아니다</span>` : ''}
+  </div>`;
+}
+
+// 지하철을 골랐을 때만 실제 노선·환승을 덧붙인다. 소요시간에는 아직 안 쓰는 안내용 표시.
+function subwayLine(res, r) {
+  if (r.mode !== 'subway') return '';
+  const p = subwayPath(prevPoint(res, r), r.poi);
+  if (!p) return '';
+  const far = Math.max(p.walkFrom, p.walkTo) > 2;      // 역에서 멀면 안내가 무의미하다
+  return `<div class="s subway" style="margin-top:4px">
+    ${p.legs.map(l => `<b style="color:${l.color}">${esc(l.name)}</b> ${esc(stName(l.from))}→${esc(stName(l.to))}`).join(' · ')}
+    <span style="opacity:.7">· ${p.stops}정거장${p.transfers ? ` · 환승 ${p.transfers}회` : ' · 직통'}</span>
+    ${far ? `<br><span style="color:var(--warn)">역에서 ${Math.max(p.walkFrom, p.walkTo).toFixed(1)}km — 실제로는 버스·택시 구간</span>` : ''}
+  </div>`;
+}
+
+// 어디에 얼마를 썼는지. 일차별로 묶어 보여준다.
+let billOpen = false;
+function billRows(res) {
+  const b = res.bills || [];
+  if (!b.length) return '<div class="s">아직 지출이 없습니다.</div>';
+  let out = '', day = null;
+  b.slice().sort((x, y) => x.day - y.day).forEach(e => {
+    if (e.day !== day) { day = e.day; out += `<div class="bday">${day + 1}일차</div>`; }
+    out += `<div class="brow ${e.amt < 0 ? 'minus' : ''}">${ic(e.ico)}<span class="bnm">${esc(e.what)}</span>
+      <b>${e.amt < 0 ? '-' : ''}${won(Math.abs(e.amt))}</b></div>`;
+  });
+  return out;
+}
+
+// 획득한 버프 목록. 의뢰가 진행 중이면 이번 판에 남은 횟수도 함께 보여준다.
+function renderBuffPop() {
+  const left = S.quest ? compute(S).left : null;
+  const list = S.buffs.filter(b => BUFFS[b]);
+  $('#buffpop').innerHTML = `<div class="row" style="margin-bottom:4px">
+      <b style="font-size:13.5px">${ic('sparkles')} 획득한 버프 ${list.length}</b>
+      <span class="grow"></span><span class="x" data-act="closebuff">${ic('x')}</span>
+    </div>
+    ${list.map(b => {
+      const B = BUFFS[b], rest = left ? left[b] : B.uses;
+      return `<div class="brow2">
+        <span class="bic">${ic(B.ico)}</span>
+        <span style="flex:1;min-width:0">
+          <span class="bt">${esc(B.name)}</span>
+          <div class="bd">${esc(B.desc)}</div>
+        </span>
+        <span class="buse ${rest ? '' : 'gone'}">${S.quest ? `${rest}/${B.uses}` : `${B.uses}`}${esc(B.unit)}</span>
+      </div>`;
+    }).join('')}
+    <div class="s" style="margin-top:6px">${S.quest ? '남은 횟수 / 한 판 한도 — 일정 앞에서부터 순서대로 쓰입니다.' : '한 의뢰에서 쓸 수 있는 횟수입니다.'}</div>`;
+  // 버튼 아래에 붙이되 화면 밖으로 나가지 않게
+  const r = $('#buffbtn').getBoundingClientRect(), p = $('#buffpop');
+  p.hidden = false;
+  p.style.left = Math.max(8, Math.min(innerWidth - p.offsetWidth - 8, r.left - 8)) + 'px';
+  p.style.top = (r.bottom + 9) + 'px';
 }
 
 function renderSum(res) {
   const q = S.quest;
-  if (!q) { $('#sum').innerHTML = `<div class="s">의뢰를 선택하면 예산·시간이 표시됩니다.</div>`; $('#warns').innerHTML = ''; return; }
+  if (!q) { $('#stats').innerHTML = `<div class="s">의뢰를 선택하면 예산·시간이 표시됩니다.</div>`; $('#sum').innerHTML = ''; $('#warns').innerHTML = ''; return; }
   const over = res.spend > q.budget;
-  $('#sum').innerHTML = `
-    <div class="stat"><span>총 경비 <span class="s">/ ${won(q.budget)}</span></span><b id="vSpend" class="${over ? 'over' : ''}"></b></div>
+  $('#stats').innerHTML = `
+    <div class="stat"><span>총 경비 <span class="s">/ ${won(q.budget)}</span></span><b id="vSpend" class="${over ? 'over' : ''}" title="누르면 지출 내역"></b></div>
+    <div id="bills" ${billOpen ? '' : 'hidden'}>${billRows(res)}</div>
+    ${res.over ? `<div class="stat"><span class="s">예산 초과 감점</span><b class="over">-${won(res.over)}</b></div>` : ''}
     <div class="stat"><span>총 이동시간</span><b id="vMove"></b></div>
-    <div class="stat"><span>만족도 합계</span><b id="vJoy"></b></div>
+    <div class="stat"><span>만족도 합계</span><b id="vJoy"></b></div>`;
+  $('#sum').innerHTML = `
     <button class="go" id="submit" ${res.bad.length || !S.plan.length ? 'disabled' : ''}>${
       !S.plan.length ? '일정을 먼저 짜세요'
       : res.bad.length ? `제출 불가 · ${esc(res.bad[0])}${res.bad.length > 1 ? ` 외 ${res.bad.length - 1}건` : ''}`
@@ -1395,7 +1771,7 @@ function insertAtDay(d) {
 // 클릭할 때마다 추가 (같은 호텔 연박, 시장 재방문 등이 필요하므로 토글이 아님). 제거는 일정표의 × 버튼.
 function addPoi(id, mode) {
   const p = poi(id);
-  if (!S.quest) return;
+  if (!S.quest || whyBlocked(p)) return;
   const i = insertAtDay(S.day);      // 보고 있는 일차에 들어간다
   S.plan.splice(i, 0, { id, mode: mode || 'bus', stay: p.stay });
   S.sel = i;                         // 방금 넣은 걸 바로 편집할 수 있게
@@ -1413,6 +1789,10 @@ document.addEventListener('click', ev => {
   // 버튼 안에 아이콘(<svg>)이 있으면 클릭 대상은 그 자식이 된다.
   // 그래서 데이터 속성은 반드시 closest() 로 거슬러 올라가 찾는다.
   const near = sel => ev.target.closest(sel);
+
+  // 버프 팝오버는 자기 자신·여는 버튼 밖을 누르면 무조건 닫는다.
+  // 아래 분기들이 대부분 return 으로 끝나므로 맨 앞에 둬야 걸린다.
+  if (!$('#buffpop').hidden && !near('#buffpop') && !near('#buffbtn')) $('#buffpop').hidden = true;
 
   const fold = near('[data-fold]');
   if (fold) {
@@ -1444,6 +1824,7 @@ document.addEventListener('click', ev => {
     else if (a === 'trip') openTrip();
     else if (a === 'closepop') closePoi();
     else if (a === 'closegu') { S.gu = null; render(); }
+    else if (a === 'closebuff') $('#buffpop').hidden = true;
     return;
   }
 
@@ -1466,7 +1847,8 @@ document.addEventListener('click', ev => {
   }
 
   const p = near('[data-poi]');
-  if (p) { openPoi(p.dataset.poi); return; }
+  // 목록에서 고른 경우 지도가 다시 그려지므로 그 뒤에 강조를 다시 입힌다
+  if (p) { const id = p.dataset.poi; openPoi(id); hiId = null; highlight(id); return; }
 
   // 일정표 편집
   const del = near('[data-del]');
@@ -1490,12 +1872,26 @@ document.addEventListener('click', ev => {
   const day = near('[data-day]');
   if (day) { S.day = +day.dataset.day; S.sel = null; render(); $('#plan').scrollTop = 0; return; }
   const tab = near('[data-tab]');
-  if (tab) { S.tab = tab.dataset.tab; render(); return; }
+  if (tab) { S.tab = tab.dataset.tab; S.sub = null; render(); return; }   // 대분류를 바꾸면 세부 필터는 초기화
+  const sub = near('[data-sub]');
+  if (sub) { S.sub = sub.dataset.sub || null; render(); return; }
+  if (near('#vSpend')) { billOpen = !billOpen; $('#bills').hidden = !billOpen; return; }
+  if (near('#buffbtn')) {
+    if ($('#buffpop').hidden) renderBuffPop(); else $('#buffpop').hidden = true;
+    return;
+  }
   if (near('#submit')) { submit(); return; }
 
   // 위 어디에도 안 걸렸고 팝업 바깥이면 팝업을 닫는다
   if (S.pop && !near('#poipop')) closePoi();
 });
+
+// 구 목록 위를 지날 때 지도에서 그 장소를 짚어준다
+$('#gulist').addEventListener('mouseover', ev => {
+  const row = ev.target.closest('.gurow');
+  if (row) highlight(row.dataset.poi);
+});
+$('#gulist').addEventListener('mouseleave', () => highlight(null));
 
 document.addEventListener('change', ev => {
   const t = ev.target;
@@ -1514,18 +1910,73 @@ function submit() {
   save();
   const up = level() > before;
   if (up) pendingPick = true;
+  const xpBefore = S.xp - gained;
+  const full = q.par * 1.25;                                   // ★3 기준 = 게이지 만점
   $('#result').innerHTML = `
     <h3>${st ? '의뢰 완료!' : '아쉽네요…'}</h3>
-    <div class="stars">${[0,1,2].map(i => ic("star", i < st ? "on" : "")).join("")}</div>
-    <div class="s">점수 <b style="color:var(--fg)">${res.score}</b> / 목표 ${q.par}</div>
-    <div class="s" style="margin-top:8px">경비 ${won(res.spend)} · 이동 ${res.moveMin}분 · 만족 ${res.joy}</div>
-    <div style="margin-top:10px;color:var(--ok)">+${gained} XP</div>
-    ${up ? `<div style="margin-top:6px;color:var(--acc);font-weight:700">${ic("party-popper")} 레벨 ${level()} 달성 — 새 장소·의뢰 해금!</div>` : ''}
-    <button class="go" id="rnext">다음 의뢰 고르기</button>
-    <button class="go" id="rstay" style="background:var(--panel2);color:var(--fg);margin-top:6px">이 의뢰 계속 다듬기</button>`;
+    <div class="rbar"><i class="sc" id="rscf"></i>${[.75, 1].map(k => `<u style="left:${k / 1.25 * 100}%" title="★${k === .75 ? 1 : 2} 기준"></u>`).join('')}</div>
+    <div class="rcap"><span>점수 <b id="rscn" style="color:var(--fg)">0</b></span><span>목표 ${q.par}</span></div>
+    <div class="stars">${[0, 1, 2].map(i => ic("star", i < st ? "on" : "")).join("")}</div>
+    <div id="rlines">
+      <div class="rline"><span>경비</span><b class="${res.over ? 'over' : ''}">${won(res.spend)}${res.over ? ` · 초과 ${won(res.over)}` : ''}</b></div>
+      <div class="rline"><span>이동</span><b>${Math.floor(res.moveMin / 60)}시간 ${res.moveMin % 60}분</b></div>
+      <div class="rline"><span>만족도</span><b>${res.joy}</b></div>
+    </div>
+    <div class="rbar" style="margin-top:12px"><i class="xp" id="rxpf"></i></div>
+    <div class="rcap"><span>${ic('sparkles')} 경험치</span><span id="rxpn">+${gained} XP</span></div>
+    <div class="rlv" id="rlv" ${up ? '' : 'hidden'}>${ic("party-popper")} 레벨 ${level()} 달성 — 새 장소·의뢰 해금!</div>
+    <div class="rbtns" id="rbtns">
+      <button class="go" id="rnext">다음 의뢰 고르기</button>
+      <button class="go" id="rstay" style="background:var(--panel2);color:var(--fg);margin-top:6px">이 의뢰 계속 다듬기</button>
+    </div>`;
   $('#result').showModal();
   $('#rnext').onclick = () => { $('#result').close(); render(); if (!offerBuff()) $('#pick').showModal(); };
   $('#rstay').onclick = () => { $('#result').close(); render(); offerBuff(); };
+  playResult({ st, score: res.score, full, gained, xpBefore, up });
+}
+
+// 결과 연출. 순서대로 하나씩 켜고, 창을 닫으면 남은 타이머를 버린다.
+// 모션을 줄이는 설정이면 전부 즉시 최종 상태로 놓는다.
+let rTimers = [];
+function playResult(o) {
+  rTimers.forEach(clearTimeout); rTimers = [];
+  const quick = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const at = (ms, fn) => rTimers.push(setTimeout(fn, quick ? 0 : ms));
+  const pct = (a, b) => Math.max(0, Math.min(100, a / b * 100));
+  const xpPct = x => (x % 120) / 120 * 100;
+
+  let t = 120;
+  at(t, () => {                                        // ① 점수 게이지 + 숫자 카운트
+    $('#rscf').style.width = pct(o.score, o.full) + '%';
+    const el = $('#rscn'), t0 = performance.now();
+    el.textContent = o.score;                        // 프레임이 안 돌아도 숫자는 맞게 (countTo 와 같은 규칙)
+    const step = now => {
+      const k = quick ? 1 : Math.min(1, (now - t0) / 850);
+      el.textContent = Math.round(o.score * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+  t += 950;
+  document.querySelectorAll('#result .stars .ic').forEach((el, i) => {   // ② 별 하나씩
+    at(t + i * 250, () => { el.classList.add('in'); if (i < o.st) say('fav'); });
+  });
+  t += 250 * 3 + 120;
+  document.querySelectorAll('#result .rline').forEach((el, i) =>         // ③ 경비·이동·만족도
+    at(t + i * 190, () => el.classList.add('in')));
+  t += 190 * 3 + 120;
+  at(t, () => {                                                          // ④ 경험치 게이지
+    $('#rxpf').style.width = (o.up ? 100 : xpPct(o.xpBefore + o.gained)) + '%';
+  });
+  if (o.up) {                                          // 레벨업이면 한 번 채웠다 비우고 다시 채운다
+    t += 900;
+    at(t, () => { const b = $('#rxpf'); b.style.transition = 'none'; b.style.width = '0'; });
+    at(t + 60, () => { const b = $('#rxpf'); b.style.transition = ''; b.style.width = xpPct(S.xp) + '%'; });
+    t += 700;
+    at(t, () => { $('#rlv').classList.add('in'); say('fav'); });
+  }
+  t += 500;
+  at(t, () => $('#rbtns').classList.add('in'));         // ⑥ 다 끝나면 버튼
 }
 
 // ── 지도 조작: 드래그 이동 / 휠 확대 ──────────────────────────
@@ -1625,7 +2076,11 @@ if (location.search.includes('test')) {
   ok(busRush.min > busFree.min, `출퇴근 시간 버스 지연 (${busFree.min}분 → ${busRush.min}분)`);
   ok(travel(home, get('haeundae'), 'taxi', 2, 480).min > travel(home, get('haeundae'), 'taxi', 2, 840).min, '택시도 정체 영향');
   ok(travel(home, get('haeundae'), 'subway', 2, 480).min === travel(home, get('haeundae'), 'subway', 2, 840).min, '지하철은 정체 영향 없음');
-  ok(Math.abs(busRush.min / busFree.base - 1.5) < .01, `정체 구간 전체에 걸치면 정확히 1.5배 (${(busRush.min / busFree.base).toFixed(2)})`);
+  // 정체는 주행 구간만 늘린다 — 도보·대기는 길이 막혀도 그대로다
+  const fx = TRANSPORT.bus.walk + TRANSPORT.bus.wait;
+  const rr = (busRush.min - fx) / (busFree.base - fx);
+  ok(Math.abs(rr - 1.5) < .02, `정체 구간 전체에 걸치면 주행분이 정확히 1.5배 (${rr.toFixed(2)})`);
+  ok(busRush.min - busFree.min < busFree.base * .5, '도보·대기에는 정체 배수가 안 붙는다');
 
   // 카페는 식사보다 체력 회복이 적다
   const eat = compute({ region: 'busan', quest: R.quests[0], arriveId: 'ktx', plan: [{ id: 'dwaeji', mode: 'bus', stay: 60 }] });
