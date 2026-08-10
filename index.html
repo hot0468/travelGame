@@ -522,6 +522,7 @@
 <script src="data/busan.js"></script>
 <script src="data/subway.js"></script>
 <script src="data/bus.js"></script>
+<script src="data/transit.js"></script>
 <script>
 // ─────────────────────────────────────────────────────────────
 // 엔진
@@ -618,28 +619,57 @@ function km(a, b) { // haversine
 }
 
 // ponytail: 직선거리×보정계수 근사. 실 API(카카오/TMap)로 바꾸려면 이 함수만 교체하면 됨.
+// 지하철은 실측 노선(subway.gap)이 있으면 그 승차시간을 쓴다. 단 양쪽 역이 가까울 때만이다 —
+// 역에서 2km 넘게 떨어진 곳은 그 구간을 실제로는 버스·택시로 가므로 실측 승차시간이 뜻을 잃는다.
+// 그때는 종전대로 직선거리 근사로 돌아간다.
+// 역까지 어떻게 가는가. 가까우면 걷고, 걸어서 갈 거리가 아니면 버스로 접근한다고 본다.
+// (정관 순두부는 노포역에서 8.7km — 걸어서 116분이라고 하면 거짓말이고, 실제로는 버스를 탄다.)
+const ACCESS_WALK_MAX = 15;              // 이 시간 넘게 걸어야 하면 버스로 갈아탄다(분)
+function stationAccess(kmToStation) {
+  const walk = kmToStation / TRANSPORT.walk.kmh * 60;
+  if (walk <= ACCESS_WALK_MAX) return { min: Math.round(walk), byBus: false };
+  // 버스로 접근: 주행 + 정류장 도보·대기. 짧은 접근이라 환승 대기가 크게 붙는다.
+  const ride = kmToStation * DETOUR / TRANSPORT.bus.kmh * 60 + TRANSPORT.bus.walk + TRANSPORT.bus.wait;
+  return { min: Math.round(Math.min(walk, ride)), byBus: ride < walk };
+}
+function subwayRide(a, b, region) {
+  const p = subwayPath(a, b, region);
+  if (!p || !p.min) return null;
+  // 양 끝에서 역까지 가는 시간을 실제 거리로 낸다. 4분 고정이면 역이 8km 여도 4분이었다.
+  const A = stationAccess(p.walkFrom), B = stationAccess(p.walkTo);
+  return { ...p, accessMin: A.min + B.min, accessByBus: A.byBus || B.byBus };
+}
 function travel(a, b, mode, people, depart, weekend) {
   const t = TRANSPORT[mode], d = km(a, b) * DETOUR;
-  const ride = Math.round(d / t.kmh * 60);
+  const sp = mode === 'subway' ? subwayRide(a, b) : null;
+  // 버스는 통합 경로표(실제 노선·환승)를 쓴다. 표에 없는 지점(임의 좌표)은 근사로 남는다.
+  // transit 의 값은 승차·환승 대기를 이미 품고 있어 TRANSPORT.walk/wait 와 겹치는데,
+  // 그 둘은 "집→정류장" 접근분이라 성격이 달라 그대로 더한다.
+  const tp = mode === 'bus' ? transitPath(a, b) : null;
+  // 실측이 있으면 그 값을, 없으면 직선거리 ÷ 속도
+  const ride = sp ? sp.min : tp ? tp.min : Math.round(d / t.kmh * 60);
   // 언덕 위·노선에서 먼 곳은 정류장에서 문 앞까지가 유난히 멀다(POI 의 access, 분).
   // 대중교통에만 붙는다 — 택시·렌터카는 문 앞까지 가고, 도보는 이미 문 앞까지 걷는다.
   const acc = PUBLIC.includes(mode) ? (a.access || 0) + (b.access || 0) : 0;
   // 정체는 주행 구간만 늘린다. 걷고 기다리는 시간은 길이 막혀도 그대로다.
   const f = rushFactor(mode, depart, ride, weekend);
-  const fixed = t.walk + t.wait + acc;
+  // 지하철은 역까지의 실제 거리로 접근시간을 낸다(walk 상수 4분은 역이 코앞일 때 얘기다).
+  const fixed = (sp && sp.accessMin !== undefined ? sp.accessMin : t.walk) + t.wait + acc;
   const min = Math.round(ride * f) + fixed;
   // 도보 수단은 구간 전체가 걷는 시간, 나머지는 정류장까지 접근하는 시간만
-  return { min, base: ride + fixed, rush: f > 1, km: d,
-           walkMin: mode === 'walk' ? min : t.walk + acc,
+  return { min, base: ride + fixed, rush: f > 1, km: d, real: !!(sp || tp),
+           walkMin: mode === 'walk' ? min : (sp && sp.accessMin !== undefined ? sp.accessMin : t.walk) + acc,
            waitMin: t.wait, cost: Math.round(t.fare(d, people)) };
 }
 
 // ── 지하철 경로 안내 (data/subway.js) ──────────────────────────
 // 실제 노선·역 순서로 "1호선 자갈치역 → 서면역 환승 → 2호선 해운대역" 을 만든다.
-// 지금은 표시 전용이다 — travel() 의 소요시간에는 아직 반영하지 않는다.
-// 환승 1회 = 5정거장 값. 3으로 두면 부산역→해운대를 연산·수영 2회 환승으로 잡는다 —
-// 정거장 수는 적지만 실제로 아무도 그렇게 안 간다. 5면 서면 1회 환승이 이긴다.
-const TRANSFER_COST = 5;
+// travel() 이 이 승차시간을 그대로 쓴다(양쪽 역이 2km 안일 때. 먼 곳은 직선거리 근사로 남는다).
+// 가중치는 실제 역간 소요시간(초)이다 — subway.gap[노선][i] = [거리km, 소요초].
+// 역간 편차가 커서(부전~서면 65초 vs 증산~호포 250초) 정거장 수로 세면 경로가 틀린다.
+const DWELL = 25;                        // 역당 정차시간(초)
+// 환승 1회 = 도보 + 반대편 열차 대기. 옛 근사(5정거장)를 실측 기반 초로 바꾼 값이다.
+const TRANSFER_SEC = 300;
 const stName = k => k + '역';            // 데이터는 "역" 을 뗀 키로 들고 있다
 function subwayOf(region) { return REGIONS[region || S.region].subway; }
 // 어떤 지점에서 가장 가까운 역
@@ -660,9 +690,14 @@ function subwayGraph(region) {
   const link = (u, v, w) => { (adj[u] = adj[u] || []).push([v, w]); };
   sw.lines.forEach(L => L.st.forEach((s, i) => {
     (lines[s] = lines[s] || []).push(L.id);
-    if (i) { const a = s + '|' + L.id, b = L.st[i - 1] + '|' + L.id; link(a, b, 1); link(b, a, 1); }
+    if (i) {
+      const g = (sw.gap && sw.gap[L.id] || [])[i - 1];       // st[i-1] → st[i] 구간
+      const w = (g ? g[1] : 90) + DWELL;                     // 주행 + 정차. 데이터 없으면 90초로 본다
+      const a = s + '|' + L.id, b = L.st[i - 1] + '|' + L.id;
+      link(a, b, w); link(b, a, w);
+    }
   }));
-  for (const s in lines) lines[s].forEach(x => lines[s].forEach(y => { if (x !== y) link(s + '|' + x, s + '|' + y, TRANSFER_COST); }));
+  for (const s in lines) lines[s].forEach(x => lines[s].forEach(y => { if (x !== y) link(s + '|' + x, s + '|' + y, TRANSFER_SEC); }));
   return (sw._g = { adj, lines });
 }
 // 두 지점 사이 지하철 경로. 노선별 구간과 환승 횟수를 돌려준다.
@@ -689,24 +724,86 @@ function subwayPath(a, b, region) {
   if (end === null) return null;
   const path = []; for (let n = end; n; n = prev[n]) path.unshift(n);
   // 같은 노선끼리 묶어 구간으로 만든다
+  // 노선 안 인접역 구간의 거리·소요시간을 gap 에서 되찾는다
+  const segOf = (line, a, b) => {
+    const L = sw.lines.find(x => x.id === line); if (!L) return null;
+    const i = L.st.indexOf(a), j = L.st.indexOf(b);
+    if (i < 0 || j < 0 || Math.abs(i - j) !== 1) return null;
+    return ((sw.gap && sw.gap[line] || [])[Math.max(i, j) - 1]) || null;
+  };
   const legs = [];
-  path.forEach(n => {
+  path.forEach((n, idx) => {
     const [st, line] = n.split('|');
     const last = legs[legs.length - 1];
-    if (last && last.line === line) { last.to = st; last.stops++; }
-    else legs.push({ line, from: st, to: st, stops: 0 });
+    if (last && last.line === line) {
+      const g = segOf(line, last.to, st);
+      last.to = st; last.stops++;
+      last.km += g ? g[0] : 0; last.sec += (g ? g[1] : 90) + DWELL;
+    }
+    else legs.push({ line, from: st, to: st, stops: 0, km: 0, sec: 0 });
   });
   const real = legs.filter(l => l.stops > 0);          // 환승만 하고 안 탄 구간은 뺀다
   if (!real.length) return null;
   const nameOf = id => (sw.lines.find(L => L.id === id) || {}).name || id + '호선';
-  return { legs: real.map(l => ({ ...l, name: nameOf(l.line), color: (sw.lines.find(L => L.id === l.line) || {}).color })),
-           transfers: real.length - 1,
+  const transfers = real.length - 1;
+  const rideSec = real.reduce((s, l) => s + l.sec, 0);
+  return { legs: real.map(l => ({ ...l, name: nameOf(l.line), color: (sw.lines.find(L => L.id === l.line) || {}).color,
+                                 min: Math.round(l.sec / 60) })),
+           transfers,
            stops: real.reduce((s, l) => s + l.stops, 0),
+           rideMin: Math.round(rideSec / 60),                       // 순수 승차(정차 포함)
+           transferMin: Math.round(transfers * TRANSFER_SEC / 60),  // 환승 도보·대기
+           min: Math.round((rideSec + transfers * TRANSFER_SEC) / 60),
+           rideKm: +real.reduce((s, l) => s + l.km, 0).toFixed(1),
            fromSt: A.st, toSt: B.st, walkFrom: A.km, walkTo: B.km };
 }
 // "1호선 부산역→서면역 · 2호선 서면역→해운대역" 형태의 한 줄 요약
 const subwayText = p => !p ? ''
-  : p.legs.map(l => `${l.name} ${stName(l.from)}→${stName(l.to)}`).join(' · ');
+  : p.legs.map(l => `${l.name} ${stName(l.from)}→${stName(l.to)}`).join(' · ')
+    + (p.min ? ` (${p.min}분)` : '');
+
+// ── 대중교통 통합 경로 (data/transit.js) ───────────────────────
+// 버스+지하철을 한 그래프로 풀어 미리 구운 표다. 지하철만으로 못 가는 곳(태종대·해동용궁사 등)이
+// 버스 환승으로 이어진다. 표는 상삼각만 담겨 있어 a→b 가 없으면 b→a 를 뒤집어 읽는다
+// (양방향 차이는 평균 1.9분이라 무시한다).
+let _tx = null;
+function transitOf(region) {
+  const T = REGIONS[region || S.region].transit;
+  if (!T) return null;
+  if (!T._i) {                                  // 조회용 색인은 한 번만 만든다
+    const oi = {}, mp = {};
+    T.ord.forEach((k, i) => oi[k] = i);
+    T.pair.forEach(([a, b, m, g]) => mp[a + '_' + b] = { m, g });
+    T._i = { oi, mp };
+  }
+  return T;
+}
+// 두 지점 사이 통합 경로. { min, legs:[{mode,from,to,lines,stops}] }
+function transitPath(a, b, region) {
+  const T = transitOf(region); if (!T || !a || !b || !a.id || !b.id) return null;
+  const { oi, mp } = T._i;
+  const i = oi[a.id], j = oi[b.id];
+  if (i === undefined || j === undefined || i === j) return null;
+  const fwd = mp[i + '_' + j], cell = fwd || mp[j + '_' + i];
+  if (!cell) return null;
+  const legs = cell.g.map(g => ({
+    mode: g[0] ? 'bus' : 'subway',
+    from: T.st[g[1]], to: T.st[g[2]],
+    lines: g[3].map(k => T.ln[k]), stops: g[4]
+  }));
+  if (!fwd) {                                   // 역방향이면 구간 순서와 양 끝을 뒤집는다
+    legs.reverse();
+    legs.forEach(l => { const t = l.from; l.from = l.to; l.to = t; });
+  }
+  const transfers = Math.max(0, legs.length - 1);
+  return { min: cell.m, legs, transfers,
+           modes: [...new Set(legs.map(l => l.mode))] };
+}
+// "2호선 해운대→수영 · 1호선 연산→토성 · 버스 17" 한 줄 요약
+const transitText = p => !p ? ''
+  : p.legs.map(l => l.mode === 'subway'
+      ? `${l.lines[0] || '?'}호선 ${l.from}→${l.to}`
+      : `버스 ${l.lines.slice(0, 2).join('·')}`).join(' · ');
 
 // ── 버스 노선 안내 (data/bus.js) ───────────────────────────────
 // 두 곳을 모두 지나는 노선이 곧 직통이다. 경로 탐색이 아니라 경유 노선 집합의 교집합이라
@@ -1650,7 +1747,26 @@ function prevPoint(res, r) {
 // 버스를 골랐을 때 두 정류장을 다 지나는 노선 번호. 소요시간에는 안 쓰는 안내용 표시.
 function busLine(res, r) {
   if (r.mode !== 'bus') return '';
-  const b = busPair(prevPoint(res, r), r.poi);
+  const prev = prevPoint(res, r);
+  const SUB = REGIONS[S.region].subway;
+  // 통합 경로가 있으면 버스+지하철 환승까지 그대로 낸다
+  const tp = transitPath(prev, r.poi);
+  if (tp) {
+    const TL = (REGIONS[S.region].transit || {}).lines || {};
+    const head = n => (TL[n] && TL[n].h) ? ` <span style="opacity:.6">${esc(TL[n].h)}분</span>` : '';
+    const legHtml = tp.legs.map(l => {
+      if (l.mode === 'subway') {
+        const L = (SUB.lines || []).find(x => x.id === l.lines[0]);
+        return `<b style="color:${L ? L.color : 'inherit'}">${esc(L ? L.name : l.lines[0] + '호선')}</b> ${esc(l.from)}역→${esc(l.to)}역`;
+      }
+      return `${ic('bus')} <b>${esc(l.lines.slice(0, 2).join('·') || '버스')}</b>${l.lines[0] ? head(l.lines[0]) : ''} ${esc(l.from)}→${esc(l.to)}`;
+    }).join(' · ');
+    return `<div class="s" style="margin-top:4px">${legHtml}
+      <span style="opacity:.7">· ${tp.transfers ? `환승 ${tp.transfers}회` : '직통'} · 승차 ${tp.min}분<span style="opacity:.6">(실제 노선)</span></span>
+    </div>`;
+  }
+  // 표에 없는 지점(임의 좌표 등)은 종전대로 정류장·직통 노선만
+  const b = busPair(prev, r.poi);
   if (!b) return '';
   const L = REGIONS[S.region].bus.lines;
   const head = n => (L[n] && L[n].h) ? ` <span style="opacity:.7">${esc(L[n].h)}분</span>` : '';
@@ -1671,8 +1787,9 @@ function subwayLine(res, r) {
   if (!p) return '';
   const far = Math.max(p.walkFrom, p.walkTo) > 2;      // 역에서 멀면 안내가 무의미하다
   return `<div class="s subway" style="margin-top:4px">
-    ${p.legs.map(l => `<b style="color:${l.color}">${esc(l.name)}</b> ${esc(stName(l.from))}→${esc(stName(l.to))}`).join(' · ')}
-    <span style="opacity:.7">· ${p.stops}정거장${p.transfers ? ` · 환승 ${p.transfers}회` : ' · 직통'}</span>
+    ${p.legs.map(l => `<b style="color:${l.color}">${esc(l.name)}</b> ${esc(stName(l.from))}→${esc(stName(l.to))} <span style="opacity:.6">${l.min}분</span>`).join(' · ')}
+    <span style="opacity:.7">· ${p.stops}정거장${p.transfers ? ` · 환승 ${p.transfers}회` : ' · 직통'}
+      · 승차 ${p.min}분<span style="opacity:.6">(실제 노선)</span></span>
     ${far ? `<br><span style="color:var(--warn)">역에서 ${Math.max(p.walkFrom, p.walkTo).toFixed(1)}km — 실제로는 버스·택시 구간</span>` : ''}
   </div>`;
 }
