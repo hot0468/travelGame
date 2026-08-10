@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="472" height="208" viewBox="0 0 472 208">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a8dcf0"/><stop offset="1" stop-color="#3d9ec8"/>
+    </linearGradient>
+    <pattern id="p" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="9" height="18" fill="#fff" opacity=".07"/>
+    </pattern>
+  </defs>
+  <rect width="472" height="208" fill="url(#g)"/>
+  <rect width="472" height="208" fill="url(#p)"/>
+  <g transform="translate(236 94) scale(1.5)" fill="#fff" stroke="#fff"
+     stroke-width="2" opacity=".95" style="--k:#3d9ec8">
+    <path d="M-34 0c10-16 30-22 44-16 10 4 16 10 20 16-4 6-10 12-20 16-14 6-34 0-44-16z"/><path d="M30-14l14-10v48l-14-10"/><circle cx="-14" cy="-4" r="4" fill="var(--k)" stroke="none"/>
+  </g>
+  <text x="236" y="186" text-anchor="middle" fill="#fff" opacity=".95"
+    font-family="'Malgun Gothic',sans-serif" font-size="19" font-weight="700">회·해산물</text>
+</svg>

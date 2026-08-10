@@ -14,7 +14,8 @@ data/subway.js  부산 도시철도 1~4호선(역 108개). REGIONS.busan.subway 
 data/transit.js 버스+지하철 통합 경로표(9,591쌍). REGIONS.busan.transit = { st[], ln[], ord[],
                 lines{}, pair[] }. tools/mktransit.js 가 생성한다(수기 편집 금지).
 assets/         지도 SVG. tools/mkmap.js 가 통계청 경계로 생성한다(수기 편집 금지).
-assets/photos/  장소 사진 <POI id>.jpg. 없으면 팝업이 사진 자리를 안 만든다(onerror 로 제거).
+assets/photos/  장소 사진 <POI id>.jpg + 유형별 배너 <POI id>.svg.
+                사진이 우선하고 없으면 배너로 갈아탄다. 136곳 모두 채워져 있다.
 admin.html      사진 크롭·저장 어드민. 팝업과 같은 236:104 로 잘라 assets/photos 에 넣는다.
 tools/          검증·캡처 스크립트 (아래)
 ```
@@ -51,9 +52,12 @@ node tools/all.js          # 스위트 12종 전부 (selftest/stam/buff/sub/dow/
   - 폴더에 바로 쓰려면 **로컬 서버로 열어야 한다**(`npx serve` 후 localhost 접속).
     File System Access API 가 `file://` 에서 차단되기 때문이다. 그냥 열면 저장이
     내려받기로 바뀌며, 받은 파일을 `assets/photos` 로 옮기면 결과는 같다.
-- **관광지 자동 수집**: `node tools/mkphoto.js` (`.apikey` 에 `TOUR_API_KEY=...`).
-  TourAPI 는 관광지 위주라 식당·카페·숙소 104곳은 대부분 안 잡힌다 — 그건 직접 넣어야 한다.
-  저작권 구분이 Type1·Type3 인 사진만 받는다(그 외는 배포물에 못 쓴다).
+- **자동 수집**: `node tools/mkphoto.js`(TourAPI, `.apikey` 에 `TOUR_API_KEY=...`) 와
+  `node tools/mkcommons.js`(위키미디어 커먼즈). TourAPI 에는 **부산 주요 명소가 없어**
+  (해운대·용궁사·오륙도·범어사) 커먼즈로 메운다. 받은 뒤 `node tools/resize.js` 로 줄이고,
+  커먼즈 사진은 `node tools/mkcredits.js` 를 **꼭** 돌려야 저작권 표기가 붙는다.
+- **배너**: `node tools/mkbanner.js` — 사진 없는 곳에 유형별 그림(.svg)을 그린다.
+  식당·숙소는 공공사진이 없고 일부는 가상 시설이라 실사를 구할 수 없다.
 - **라이선스**: 배포물에 들어가므로 직접 찍었거나 상업 이용이 허용된 것만 넣는다.
   출처 표시가 필요한 사진을 쓰면 앱에도 표기를 남겨야 한다.
 
