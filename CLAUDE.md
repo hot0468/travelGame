@@ -11,8 +11,6 @@ data/busan.js   부산 데이터: REGIONS.busan = { mapImage, origins, starts, s
                 sightTypes/foodTypes/ageTypes, pois(136), quests(6) }
 data/subway.js  부산 도시철도 1~4호선(역 108개). REGIONS.busan.subway = { lines[], pos{} }.
                 출처 공공데이터포털 부산교통공사_도시철도역사정보(이용허락 제한 없음).
-data/bus.js     시내버스 경유 노선. REGIONS.busan.bus = { lines{}, near{}, starts{} }.
-                tools/mkbus.js 가 부산버스정보시스템 OpenAPI 에서 생성한다(수기 편집 금지).
 data/transit.js 버스+지하철 통합 경로표(9,591쌍). REGIONS.busan.transit = { st[], ln[], ord[],
                 lines{}, pair[] }. tools/mktransit.js 가 생성한다(수기 편집 금지).
 assets/         지도 SVG. tools/mkmap.js 가 통계청 경계로 생성한다(수기 편집 금지).
@@ -108,8 +106,6 @@ powershell -NoProfile -File tools/probe.ps1                                     
   - 재생성: `node tools/mktransit.js` (`.apikey` 에 `BUSAN_BIMS_KEY=...`. **Encoding 키**를
     넣는다 — 키를 쿼리에 그대로 붙이므로 Decoding 키는 403 이 난다. 응답은 임시폴더 캐시라
     재실행은 오프라인으로 된다).
-- **버스 직통 안내**(`data/bus.js`): 장소별 경유 노선의 **교집합**으로 직통만 낸다(`busPair`).
-  통합 경로표에 없는 지점의 대비책으로 남아 있다.
   정류장은 반경 0.5km 안에서 고르고, 노선이 하나도 안 잡히면 `FAR`(1.6km)까지 넓힌다 —
   그렇게 잡힌 13곳(태종대 1.4km·가덕도 1.5km 등)은 UI 가 "걸어서 갈 거리가 아니다" 로 경고한다.
   마을버스는 API 노선 목록에 없어 일부 정류장이 노선 없이 버려진다(파크 하얏트 앞 정류장 등).

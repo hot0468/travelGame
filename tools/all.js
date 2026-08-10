@@ -3,7 +3,7 @@
 const { spawnSync } = require('child_process');
 const path = require('path');
 
-const suites = ['selftest', 'stamtest', 'bufftest', 'subtest', 'dowtest', 'rettest', 'daytest', 'ruletest', 'subwaytest', 'bustest', 'transittest', 'balance'];
+const suites = ['selftest', 'stamtest', 'bufftest', 'subtest', 'dowtest', 'rettest', 'daytest', 'ruletest', 'subwaytest', 'transittest', 'balance'];
 let fails = 0;
 
 for (const name of suites) {

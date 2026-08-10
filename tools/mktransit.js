@@ -1,5 +1,5 @@
 // data/transit.js 생성기 — 버스+지하철을 한 그래프에 얹어 장소 간 최적 경로를 미리 굽는다.
-//   node tools/mktransit.js          (mkbus 와 같은 캐시를 쓴다. 캐시가 있으면 오프라인으로 된다)
+//   node tools/mktransit.js          (응답은 임시폴더에 캐시되므로 재실행은 오프라인으로 된다)
 //   node tools/mktransit.js --fresh  캐시 무시하고 API 재호출
 // 서비스키는 저장소 루트의 .apikey (gitignore 됨).
 //
@@ -23,6 +23,7 @@ const WALK_KMH = 4.5;
 const XFER_WALK = 0.4;       // 이 거리 안이면 걸어서 갈아탄다(km)
 const BOARD_BUS = 300;       // 버스 승차 대기(초) — 배차 평균의 절반쯤
 const BOARD_SUB = 180;       // 지하철 승차 대기(초)
+const SUB_TRANSFER = 240;    // 지하철끼리 갈아타기(초) — 계단·통로 이동 + 반대편 열차 대기
 const SEED_NEAR = 0.5;       // 장소에서 정류장·역까지 이 안이면 걸어간다(km)
 const SEED_FAR = 1.6;        // 반경 안에 아무것도 없으면 여기까지 넓힌다(태종대·가덕도 등)
 
@@ -82,6 +83,10 @@ const dist = (a, b) => {
   // ── 그래프. 노드는 'B|정류장id' / 'S|역명'
   const adj = {};
   const link = (u, v, w) => { (adj[u] = adj[u] || []).push([v, w]); };
+  // "타고 이동하는" 간선이 붙은 노드. 도보 환승만으로 이어진 곳과 구분한다 —
+  // 마린시티처럼 마을버스 전용 구역은 정류장끼리 도보로만 이어져 섬이 된다.
+  const rideable = new Set();
+  const ride = (u, v, w) => { link(u, v, w); rideable.add(u); rideable.add(v); };
   // 버스: 노선 순서대로 인접 정류장. 좌표 누적거리라 노선의 굴곡이 반영된다.
   // 편도 노선도 있지만 대부분 왕복이라 양방향으로 둔다(반대편 정류장은 길 건너 별도 id 라 어차피 갈린다).
   const busLineOf = {};       // 정류장 -> 그 정류장을 지나는 노선 번호들
@@ -94,20 +99,31 @@ const dist = (a, b) => {
       const d = dist(stops[a], stops[b]);
       if (d > 5) continue;                       // 좌표 이상치는 버린다
       const w = d / BUS_KMH * 3600 + BUS_DWELL;
-      link('B|' + a, 'B|' + b, w); link('B|' + b, 'B|' + a, w);
+      ride('B|' + a, 'B|' + b, w); ride('B|' + b, 'B|' + a, w);
     }
   }
-  // 지하철: 실측 역간 소요시간(subway.gap)
+  // 지하철: 실측 역간 소요시간(subway.gap). 노드는 'S|역명|노선' 이다 —
+  // 'S|역명' 하나로 두면 수영역에서 2호선→3호선 갈아타기가 공짜가 되어
+  // 정거장만 적으면 환승을 몇 번이든 하는 경로가 나온다.
+  const stLines = {};
   SW.lines.forEach(L => L.st.forEach((s, i) => {
+    (stLines[s] = stLines[s] || []).push(L.id);
     if (!i) return;
     const g = (SW.gap[L.id] || [])[i - 1];
     const w = (g ? g[1] : 90) + SUB_DWELL;
-    link('S|' + L.st[i - 1], 'S|' + s, w); link('S|' + s, 'S|' + L.st[i - 1], w);
+    const a = 'S|' + L.st[i - 1] + '|' + L.id, b = 'S|' + s + '|' + L.id;
+    ride(a, b, w); ride(b, a, w);
+  }));
+  // 같은 역의 다른 노선끼리 = 갈아타기. 계단·이동에 드는 시간을 물린다.
+  for (const st in stLines) stLines[st].forEach(x => stLines[st].forEach(y => {
+    if (x !== y) link('S|' + st + '|' + x, 'S|' + st + '|' + y, SUB_TRANSFER);
   }));
   // 환승: 가까운 정류장·역끼리 도보로 잇는다. 전수 비교는 8,900² 이라 격자로 후보를 좁힌다.
   const nodes = [];
   for (const id in stops) nodes.push({ k: 'B|' + id, y: stops[id].y, x: stops[id].x });
-  for (const st in SW.pos) nodes.push({ k: 'S|' + st, y: SW.pos[st][0], x: SW.pos[st][1] });
+  // 역은 노선마다 노드가 따로다. 도보로 닿는 정류장은 그 역의 모든 노선에 붙는다.
+  for (const st in SW.pos) (stLines[st] || []).forEach(ln =>
+    nodes.push({ k: 'S|' + st + '|' + ln, y: SW.pos[st][0], x: SW.pos[st][1] }));
   const GS = 0.005, grid = {};
   const cell = (y, x) => Math.round(y / GS) + ',' + Math.round(x / GS);
   nodes.forEach(n => (grid[cell(n.y, n.x)] = grid[cell(n.y, n.x)] || []).push(n));
@@ -126,9 +142,18 @@ const dist = (a, b) => {
   // ── 장소별 진입점(반경 안 정류장·역). 없으면 FAR 까지 넓힌다.
   const places = [...R.pois.map(p => ({ id: p.id, nm: p.name, y: p.lat, x: p.lng })),
                   ...R.starts.map(s => ({ id: s.id, nm: s.name, y: s.lat, x: s.lng }))];
+  // 간선이 붙은 노드만 진입점이 된다. 마을버스 전용 정류장은 노선 데이터가 없어
+  // 고립돼 있는데(BIMS 목록에 마을버스가 빠져 있다), 그걸 진입점으로 잡으면
+  // 다익스트라가 한 발짝도 못 나간다 — 파크 하얏트가 135쌍 전부 경로 없음이었던 이유다.
+  const live = n => rideable.has(n.k);
   const seedsOf = p => {
-    let hit = nodes.filter(n => dist(n, p) <= SEED_NEAR);
-    if (!hit.length) hit = nodes.filter(n => dist(n, p) <= SEED_FAR);
+    let hit = nodes.filter(n => live(n) && dist(n, p) <= SEED_NEAR);
+    if (!hit.length) hit = nodes.filter(n => live(n) && dist(n, p) <= SEED_FAR);
+    // 그래도 없으면 더 넓혀서라도 잡는다(가덕도처럼 외진 곳). 거리는 도보시간에 그대로 반영된다.
+    if (!hit.length) {
+      const sorted = nodes.filter(live).map(n => [n, dist(n, p)]).sort((a, b) => a[1] - b[1]);
+      hit = sorted.slice(0, 3).map(x => x[0]);
+    }
     return hit.map(n => [n.k, dist(n, p)]);
   };
   const seeds = {}; places.forEach(p => seeds[p.id] = seedsOf(p));
@@ -169,38 +194,22 @@ const dist = (a, b) => {
   // 버스 구간의 노선 번호는 그 구간 정류장들이 공유하는 노선의 교집합에서 고른다.
   function summarize(prev, endKey) {
     const p = []; for (let n = endKey; n; n = prev[n]) p.unshift(n);
+    // 'S|역명|노선' / 'B|정류장id'. 지하철은 노선이 바뀌면 구간을 끊는다.
     const segs = [];
     p.forEach(k => {
-      const kind = k[0], id = k.slice(2);
+      const kind = k[0];
+      const rest = k.slice(2), bar = rest.indexOf('|');
+      const id = kind === 'S' && bar >= 0 ? rest.slice(0, bar) : rest;
+      const ln = kind === 'S' && bar >= 0 ? rest.slice(bar + 1) : null;
       const last = segs[segs.length - 1];
-      if (last && last.kind === kind) { last.ids.push(id); }
-      else segs.push({ kind, ids: [id] });
+      if (last && last.kind === kind && last.ln === ln) { last.ids.push(id); }
+      else segs.push({ kind, ln, ids: [id] });
     });
     const out = [];
     segs.filter(s => s.ids.length > 1).forEach(s => {
       if (s.kind === 'S') {
-        // 역과 역 사이마다 "그 구간을 잇는 노선" 을 구하고, 노선이 바뀌는 곳에서 끊는다.
-        // 한 덩어리로 두면 해운대→토성이 [1,2,3] 이 되어 어디서 갈아타는지 안 보인다.
-        const hop = [];
-        for (let i = 1; i < s.ids.length; i++) {
-          const ls = [];
-          SW.lines.forEach(L => {
-            const x = L.st.indexOf(s.ids[i - 1]), y = L.st.indexOf(s.ids[i]);
-            if (x >= 0 && y >= 0 && Math.abs(x - y) === 1) ls.push(L.id);
-          });
-          hop.push(ls);
-        }
-        // 앞 구간에서 타던 노선을 되도록 이어 탄다(환승을 최소로 읽는다)
-        let cur = null, from = s.ids[0], n = 0;
-        for (let i = 0; i < hop.length; i++) {
-          const pick = cur && hop[i].includes(cur) ? cur : hop[i][0];
-          if (cur !== null && pick !== cur) {
-            out.push({ m: 'sub', a: from, b: s.ids[i], l: [cur], n });
-            from = s.ids[i]; n = 0;
-          }
-          cur = pick; n++;
-        }
-        if (n) out.push({ m: 'sub', a: from, b: s.ids[s.ids.length - 1], l: cur ? [cur] : [], n });
+        // 노선은 노드 키에 들어 있다(구간을 나눌 때 이미 노선별로 끊었다).
+        out.push({ m: 'sub', a: s.ids[0], b: s.ids[s.ids.length - 1], l: [s.ln], n: s.ids.length - 1 });
         return;
       }
       const sets = s.ids.map(id => busLineOf[id] || new Set());

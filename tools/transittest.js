@@ -4,7 +4,6 @@ const dir = path.join(__dirname, '..');
 global.window = global;
 eval(fs.readFileSync(path.join(dir, 'data/busan.js'), 'utf8'));
 eval(fs.readFileSync(path.join(dir, 'data/subway.js'), 'utf8'));
-eval(fs.readFileSync(path.join(dir, 'data/bus.js'), 'utf8'));
 eval(fs.readFileSync(path.join(dir, 'data/transit.js'), 'utf8'));
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 eval(html.slice(html.indexOf('const DETOUR'), html.indexOf('// 상태'))
@@ -141,4 +140,31 @@ ok(T.st.length > 100 && T.ln.length > 100, `이름사전 ${T.st.length} · 노�
   const p = transitPath(poi('haeundae'), poi('gamcheon'));
   const s = transitText(p);
   ok(s && s.length > 5, `요약: ${s}`);
+}
+
+// ── 커버리지 — 표가 장소 쌍 전부를 덮어야 한다.
+// bus.js 폴백을 걷어냈으므로 빠진 쌍이 생기면 그 구간은 안내가 아예 없다.
+{
+  const oi = {}; T.ord.forEach((k, i) => oi[k] = i);
+  const mp = {}; T.pair.forEach(([a, b]) => mp[a + '_' + b] = 1);
+  const all = [...R.pois, ...R.starts];
+  let miss = 0; const ex = [];
+  all.forEach(a => all.forEach(b => {
+    if (a === b) return;
+    const i = oi[a.id], j = oi[b.id];
+    if (!mp[Math.min(i, j) + '_' + Math.max(i, j)]) { miss++; if (ex.length < 3) ex.push(a.name + '↔' + b.name); }
+  }));
+  ok(miss === 0, `장소 ${all.length}곳 전 쌍 커버 (누락 ${miss}${ex.length ? ': ' + ex.join(', ') : ''})`);
+  // 진입점이 도보로만 이어진 섬이면 그 장소는 통째로 빠진다 — 파크 하얏트가 그랬다.
+  const orphan = all.filter(p => {
+    const i = oi[p.id];
+    return !T.pair.some(([a, b]) => a === i || b === i);
+  });
+  ok(!orphan.length, '고립된 장소 없음' + (orphan.length ? ': ' + orphan.map(p => p.name).join(', ') : ''));
+}
+// 지하철 환승에 비용이 붙는가 — 안 붙으면 정거장만 적은 다중 환승이 이긴다
+{
+  const many = T.pair.filter(([, , , segs]) => segs.filter(g => g[0] === 0).length >= 4);
+  ok(many.length < T.pair.length * .02,
+     `지하철 4회+ 환승 ${many.length}쌍 (전체의 ${(many.length / T.pair.length * 100).toFixed(1)}%) — 환승 비용이 실제로 물린다`);
 }
