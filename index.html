@@ -131,9 +131,11 @@
   /* 방금 담은 구간이 이전 장소에서 뻗어 나오는 연출.
      dashoffset 은 점선 무늬 자리를 써버려 실선이 되고, 불투명 덮개는 지도까지 가린다.
      clipPath 를 늘리면 "그릴 영역" 만 자라므로 무늬도 지도도 그대로다. */
-  @keyframes reveal{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  /* 회전은 반드시 CSS 로 준다 — transform 속성은 프레젠테이션 속성이라
+     애니메이션이 transform 을 잡는 순간 통째로 덮여 clip 이 선 방향을 잃는다. */
+  @keyframes reveal{from{transform:rotate(var(--deg)) scaleX(0)}to{transform:rotate(var(--deg)) scaleX(1)}}
   .legclip rect{transform-box:fill-box;transform-origin:0 50%;animation:reveal .45s cubic-bezier(.4,0,.2,1) forwards}
-  @media (prefers-reduced-motion:reduce){.legclip rect{animation:none;transform:none}}
+  @media (prefers-reduced-motion:reduce){.legclip rect{animation:none;transform:rotate(var(--deg))}}
   @keyframes floatup{from{opacity:1;transform:translate(-50%,0) scale(1)}
                      to{opacity:0;transform:translate(-50%,-46px) scale(1.5)}}
   .fx{position:fixed;z-index:19;pointer-events:none;font-weight:800;font-size:17px;color:var(--ok);
@@ -155,6 +157,16 @@
   .fold:hover{color:var(--fg)}
   .scroll{overflow-y:auto;padding:12px;flex:1}
   h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:0 0 8px}
+  /* 의뢰인의 편지 — 편지지 한 장 위에 사연, 그 아래 조건 목록 */
+  .paper{background:var(--panel2);border:2.5px dashed var(--ink);border-radius:18px;
+         padding:16px 18px;line-height:1.8;box-shadow:var(--hard)}
+  .paper p{margin:0 0 10px}
+  .paper .sign{margin:14px 0 0;text-align:right;font-weight:800}
+  .need{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:8px}
+  .need li{display:flex;gap:9px;align-items:flex-start;font-size:14px}
+  .need li>.ic{flex:none;margin-top:2px}
+  .need b{font-weight:800}
+  .need .must{color:var(--acc-d)}
   .card{background:var(--panel);border:2.5px solid var(--ink);border-radius:16px;padding:11px 13px;margin-bottom:10px;
         cursor:pointer;box-shadow:var(--hard);transition:transform .12s ease,box-shadow .12s ease}
   .card:hover{transform:translateY(-2px) rotate(-.4deg);box-shadow:var(--hard-lift)}
@@ -275,6 +287,14 @@
   .blk.on{outline:2px solid var(--acc);outline-offset:1px;z-index:3}
   .blk.err{border-color:var(--bad)!important;background:#ffe1e1!important}
   .blk .nm{font-weight:600}
+  /* 블록에서 바로 빼기. 글자와 겹치지 않게 오른쪽 자리를 비워 둔다 */
+  .blk.hasx{padding-right:20px}
+  .blk .bx{position:absolute;top:2px;right:3px;width:15px;height:15px;border-radius:50%;
+           display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.75);
+           color:var(--dim);opacity:.55;transition:opacity .12s,color .12s}
+  .blk .bx .ic{width:11px;height:11px}
+  .blk:hover .bx{opacity:1}
+  .blk .bx:hover{color:var(--bad);background:#fff}
   .blk .tm{font-variant-numeric:tabular-nums;opacity:.75;font-size:10px}
   .move{background:repeating-linear-gradient(45deg,#e6ebf1,#e6ebf1 5px,#f3f6f9 5px,#f3f6f9 10px);
         border:1px solid var(--line);color:var(--dim);z-index:1}
@@ -302,6 +322,13 @@
   .warns .msgs li{display:flex;gap:5px;align-items:flex-start;line-height:1.5}
   .msgs li{color:var(--bad);margin-bottom:3px}
   .msgs li.ok{color:var(--ok)}
+  /* 채워진 조건은 초록으로 바뀐 뒤 접히며 사라진다 */
+  @keyframes msgdone{0%{color:var(--bad)}
+                     20%{color:var(--ok);opacity:1;transform:none}
+                     65%{color:var(--ok);opacity:1;transform:none}
+                     100%{color:var(--ok);opacity:0;transform:translateX(12px);max-height:0;margin-bottom:0}}
+  .msgs li.done{color:var(--ok);overflow:hidden;max-height:3em;animation:msgdone 1.05s ease-in forwards}
+  @media (prefers-reduced-motion:reduce){.msgs li.done{display:none}}
   button.go{width:100%;margin-top:9px;padding:11px;border:0;border-radius:13px;background:var(--acc);color:#fff;
             font-weight:800;font-size:14.5px;letter-spacing:-.01em;cursor:pointer;font-family:inherit;
             border:2.5px solid var(--ink);
@@ -413,6 +440,7 @@
   <symbol id="i-percent" viewBox="0 0 24 24"><line x1="19" x2="5" y1="5" y2="19" /> <circle cx="6.5" cy="6.5" r="2.5" /> <circle cx="17.5" cy="17.5" r="2.5" /></symbol>
   <symbol id="i-armchair" viewBox="0 0 24 24"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3" /> <path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z" /> <path d="M5 18v2" /> <path d="M19 18v2" /></symbol>
   <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /> <path d="M20 2v4" /> <path d="M22 4h-4" /> <circle cx="4" cy="20" r="2" /></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /> <rect x="2" y="4" width="20" height="16" rx="2" /></symbol>
   <symbol id="i-gift" viewBox="0 0 24 24"><path d="M12 7v14" /> <path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8" /> <path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5" /> <rect x="3" y="7" width="18" height="4" rx="1" /></symbol>
   <symbol id="i-ferris-wheel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2" /> <path d="M12 2v4" /> <path d="m6.8 15-3.5 2" /> <path d="m20.7 7-3.5 2" /> <path d="M6.8 9 3.3 7" /> <path d="m20.7 17-3.5-2" /> <path d="m9 22 3-8 3 8" /> <path d="M8 22h8" /> <path d="M18 18.7a9 9 0 1 0-12 0" /></symbol>
   <symbol id="i-shopping-bag" viewBox="0 0 24 24"><path d="M16 10a4 4 0 0 1-8 0" /> <path d="M3.103 6.034h17.794" /> <path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></symbol>
@@ -497,10 +525,17 @@
   <h3>어떤 의뢰를 맡으시겠습니까?</h3>
   <p class="s" style="margin:0 0 14px">
     손님의 예산·일정·필수 코스에 맞춰 부산 여행을 설계하는 게임입니다.
-    최소 비용으로 최대한 알차게 — 레벨이 오르면 쓸 수 있는 장소와 의뢰가 늘어납니다.
+    최소 비용으로 최대한 알차게 — 레벨이 오르면 새 의뢰가 열리고 레벨업 보상을 고를 수 있습니다.
   </p>
   <div id="quests"></div>
   <button class="go" id="pickclose">돌아가기</button>
+</dialog>
+
+<!-- 의뢰를 맡으면 가장 먼저 뜨는 손님의 편지. 조건을 한 장에 모아 보여준다 -->
+<dialog id="letter" class="wide">
+  <h3 id="lethd"></h3>
+  <div id="letbody"></div>
+  <button class="go" id="letgo"></button>
 </dialog>
 
 <!-- 의뢰를 고르면 이어서 뜨는 도착 교통편 선택 -->
@@ -1044,11 +1079,13 @@ const inFilter = p => (S.tab === 'all' || p.type === S.tab) && (!S.sub || subKey
 // (장소마다 compute() 를 다시 돌리면 지도 드래그 프레임이 죽는다).
 function blockCtx() {
   const q = S.quest; if (!q) return null;
-  const day = S.day, i = insertAtDay(day), rows = compute(S).rows;
+  const day = S.day, i = insertAtDay(day), res = compute(S), rows = res.rows;
   const pr = i > 0 ? rows[i - 1] : null;
   const depart = pr && pr.poi.type !== 'stay' ? pr.end : day * 1440 + (day === 0 ? wakeOf(0) : wakeOf(day));
   return {
     q, day, depart,
+    // 이 자리에 넣을 때 남아 있는 체력. 앞이 숙소면 자고 일어난 뒤라 그날의 시작값을 쓴다.
+    stam: pr && pr.poi.type !== 'stay' ? pr.stam : (res.dayStat[day] || { start: q.stamina }).start,
     prev: i > 0 ? poi(S.plan[i - 1].id) : startPoint(S),
     wknd: isWeekend(dowOf(q, day)),
     dow: dowOf(q, day),
@@ -1063,14 +1100,35 @@ function whyBlocked(p, ctx) {
   if (!ctx) return null;
   if (p.closed && p.closed.includes(ctx.dow)) return `${REGIONS[S.region].dayNames[ctx.dow]}요일 휴무`;
   if (p.type === 'stay') return null;                 // 숙소는 체크인 시각만 맞으면 됨
-  const fastest = Math.min(...ctx.modes.map(k => travel(ctx.prev, p, k, ctx.q.people, ctx.depart, ctx.wknd).min));
+  // 수단별 소요·체력을 한 번에 잰다. 따로 두 번 돌면 136곳 × 5수단이 두 배가 되어
+  // 렌더마다 travel() 이 1,360번 불린다(측정 0.34초) — 지도를 만질 때마다 걸린다.
+  let fastest = Infinity, easiest = Infinity;
+  for (const k of ctx.modes) {
+    const t = travel(ctx.prev, p, k, ctx.q.people, ctx.depart, ctx.wknd);
+    if (t.min < fastest) fastest = t.min;
+    const d = legDrain(p, ctx, k, t);
+    if (d < easiest) easiest = d;
+  }
   const arrive = ctx.depart + fastest;
   const open = ctx.day * 1440 + p.open[0], close = ctx.day * 1440 + p.open[1];
   const end = Math.max(arrive, open) + p.stay;
   if (arrive > close) return `영업 종료(${hhmm(p.open[1])}) 후에야 도착`;
   if (end > close) return `영업 종료(${hhmm(p.open[1])}) 전에 못 나옴`;
   if (end > ctx.day * 1440 + 1440) return '자정을 넘김';
+  // 가장 덜 지치는 수단으로도 체력이 바닥나면 넣을 수 없다.
+  // 열 시간 걸어가는 구간이 여기서 걸린다 — 시간은 남아도 사람이 못 버틴다.
+  if (ctx.stam != null && ctx.stam - easiest < 0) return '체력이 남지 않음';
   return null;
+}
+// 이 자리에 p 를 k 수단으로 넣을 때 드는 체력 — 이동 소모 + 체류 소모(식사는 회복이라 음수).
+// 이미 잰 구간이 있으면 t 로 넘겨 travel() 을 다시 부르지 않는다.
+function legDrain(p, ctx, k, t) {
+  t = t || travel(ctx.prev, p, k, ctx.q.people, ctx.depart, ctx.wknd);
+  const arrive = ctx.depart + t.min;
+  const begin = Math.max(arrive, ctx.day * 1440 + p.open[0]);
+  return drain(DRAIN_MOVE[k], ctx.depart, arrive, ctx.q.staminaType, true, null)
+    + drain(DRAIN_STAY[p.type] * (p.type === 'food' && p.sub === 'cafe' ? .5 : 1),
+            begin, begin + p.stay, ctx.q.staminaType, false, null);
 }
 // 지도 핀 안에 그릴 아이콘 — 색은 대분류, 아이콘은 세부 타입을 나타낸다
 const pinIcon = p => p.type === 'sight' ? SUBT(p).ico
@@ -1291,7 +1349,7 @@ function renderMap() {
       const len = Math.hypot(bx - ax, by - ay) || 1;
       const deg = Math.atan2(by - ay, bx - ax) * 180 / Math.PI;
       g += `<clipPath id="legclip" class="legclip">
-        <rect x="${ax}" y="${ay - 8}" width="${len}" height="16" transform="rotate(${deg} ${ax} ${ay})"/>
+        <rect x="${ax}" y="${ay - 8}" width="${len}" height="16" style="--deg:${deg.toFixed(2)}deg"/>
       </clipPath>
       <g clip-path="url(#legclip)">${light ? poly(seg, '#fff', 7) : ''}${poly(seg, '#2a5fd0', 3)}</g>`;
     }
@@ -1401,14 +1459,18 @@ function openMove(id) {
 
   $('#movehd').innerHTML = `${ic('arrow-right')} ${esc(p.name)} 까지 무엇을 타고 갈까요?`;
   $('#movesub').textContent = `${from.name} → ${p.name} · ${hhmm(depart)} 출발 · ${S.day + 1}일차 ${i + 1}번째 일정`;
+  const ctx = blockCtx();
   $('#moveopts').innerHTML = Object.entries(TRANSPORT).map(([k, t]) => {
-    const banned = ban.includes(k);
+    // 그 수단으로 가면 체력이 바닥나는 경우도 금지 수단과 똑같이 못 고르게 막는다
+    const tired = ctx && ctx.stam - legDrain(p, ctx, k) < 0;
+    const banned = ban.includes(k) || tired;
     const leg = travel(from, p, k, q.people, depart);
     let fare = leg.cost;
     if (hasBuff('taxicoupon') && k === 'taxi') fare = Math.max(0, fare - 4800 * Math.ceil(q.people / 4));
     const st = drain(DRAIN_MOVE[k], 0, leg.min, q.staminaType, true, hasBuff);
     return `<div class="card ${banned ? 'lock' : ''}" ${banned ? '' : `data-move="${k}" data-poi2="${id}"`}>
-      <div class="t">${ic(t.ico, 'big')} ${t.name}${banned ? ' — 이 의뢰는 이용 불가' : ''}</div>
+      <div class="t">${ic(t.ico, 'big')} ${t.name}${
+        ban.includes(k) ? ' — 이 의뢰는 이용 불가' : tired ? ' — 체력이 남지 않음' : ''}</div>
       <div class="s" style="margin-top:4px">${leg.min}분${leg.rush ? ` <b style="color:var(--warn)">(정체 +${leg.min - leg.base}분)</b>` : ''} · ${leg.km.toFixed(1)}km · ${won(fare)}${k === 'car' ? ' + 일 대여료' : ''}${walkNote(leg)}</div>
       <div class="s">체력 -${st.toFixed(1)}</div>
     </div>`;
@@ -1417,6 +1479,36 @@ function openMove(id) {
 }
 
 // 도착 교통편 선택 ------------------------------------------
+// 의뢰를 맡으면 먼저 손님의 편지를 보여준다. 조건은 의뢰 데이터에서 그대로 만든다 —
+// 숫자를 편지에 손으로 옮겨 적으면 밸런스를 조정할 때마다 편지가 거짓말을 하게 된다.
+function letterBody(q) {
+  const R = REGIONS[S.region];
+  const li = (ico, txt) => `<li>${ic(ico)}<span>${txt}</span></li>`;
+  return `<div class="paper">
+      <p>여행설계사님께,</p>
+      <p>${esc(q.desc)}</p>
+      <p>저희는 ${esc(AT(q).desc)}. 잘 부탁드립니다.</p>
+      <p class="sign">${esc(q.from)}에서, ${esc(q.age)} 손님 드림</p>
+    </div>
+    <ul class="need">
+      ${li('calendar-days', `<b>${q.days}일</b> 일정 · ${dowName(R, q.startDow)}요일 출발 · ${ic('users')} ${q.people}인`)}
+      ${li('wallet', `예산 <b>${won(q.budget)}</b> — 부산까지 오는 교통비도 여기서 나갑니다`)}
+      ${li('star', `<span class="must">꼭 가야 할 곳: <b>${q.must.map(id => esc(poi(id).name)).join(', ')}</b></span>`)}
+      ${li('target', `관광지 <b>${q.minSights}곳</b> 이상`)}
+      ${q.days > 1 ? li('bed-double', `숙소 <b>${q.days - 1}곳</b>${q.minStayTier ? ` · ${TIER_NAME[q.minStayTier]} 이상` : ''}`) : ''}
+      ${q.banModes ? li('ban', `<b>${q.banModes.map(m => TRANSPORT[m].name).join('·')}</b>는 타지 않습니다`) : ''}
+      ${q.endBy ? li('clock', `마지막 날 <b>${hhmm(q.endBy)}</b>까지 출발지로 돌아와야 합니다`) : ''}
+      ${li(ST(q).ico, `${ST(q).name} · 체력 ${q.stamina} — ${esc(ST(q).desc)}`)}
+    </ul>`;
+}
+
+function openLetter(q) {
+  $('#lethd').innerHTML = `${ic('mail', 'big')} ${esc(q.from)}에서 온 편지`;
+  $('#letbody').innerHTML = letterBody(q);
+  $('#letgo').innerHTML = `${ic('check')} 맡겠습니다`;
+  $('#letter').showModal();
+}
+
 function openTrip() {
   const q = S.quest; if (!q) return;
   const opts = REGIONS[S.region].origins[q.from] || [];
@@ -1703,7 +1795,7 @@ function renderPlan(res) {
       const bk = res.back, bt = TRANSPORT[bk.mode];
       html += blk('arrive', y(bk.begin), bk.leg.min, -2,
         `${ic(bt.ico)} ${esc(bk.name)} 귀가`, `${bt.name} · ${bk.leg.min}분 · ${won(bk.leg.cost)}`,
-        `${bk.name} ${hhmm(bk.end)} 도착`);
+        `${bk.name} ${hhmm(bk.end)} 도착`, 'data-delret="1"');
       // 그 뒤 집까지 가는 도시간 귀가편 (1일차 맨 위의 출발 구간과 짝)
       if (bk.home) html += blk('arrive', y(bk.end), bk.home.min, -3,
         `${ic(bk.home.ico)} ${esc(bk.home.name)} 도착`, `${bk.home.via} · ${bk.home.min}분`,
@@ -1724,7 +1816,7 @@ function renderPlan(res) {
         y(r.begin), isStay ? MINBLK / PPM : r.stay, r.i,
         `<span class="nm">${isStay ? ic('bed-double') + ' ' : ''}${esc(r.poi.name)}</span>`,
         isStay ? '취침 · 다음날 아침 출발' : `${hhmm(r.begin)}–${hhmm(r.end)} · ${r.stay}분`,
-        `${r.poi.name} ${hhmm(r.begin)}–${hhmm(r.end)}`);
+        `${r.poi.name} ${hhmm(r.begin)}–${hhmm(r.end)}`, `data-del="${r.i}"`);
     });
     html += `</div>`;
   }
@@ -1733,11 +1825,13 @@ function renderPlan(res) {
 }
 
 // 블록 하나. 짧아도 최소 높이는 주되, 시간 비례가 원칙.
-function blk(cls, top, mins, i, line1, line2, tip) {
+// del: 블록 안에 놓을 삭제 버튼의 data 속성(`data-del="3"` 등). 없으면 버튼도 없다.
+function blk(cls, top, mins, i, line1, line2, tip, del) {
   const h = Math.max(MINBLK, mins * PPM);
   const two = h >= 32 && line2;
-  return `<div class="blk ${cls}" data-sel="${i}" style="top:${top}px;height:${h}px" title="${esc(tip || '')}"
-    >${line1}${two ? `<br><span class="tm">${line2}</span>` : ''}</div>`;
+  return `<div class="blk ${cls}${del ? ' hasx' : ''}" data-sel="${i}" style="top:${top}px;height:${h}px" title="${esc(tip || '')}"
+    >${line1}${two ? `<br><span class="tm">${line2}</span>` : ''}${
+      del ? `<span class="bx" ${del} title="일정에서 빼기">${ic("x")}</span>` : ''}</div>`;
 }
 
 // 선택한 블록의 편집 스트립. 짧은 블록 안에는 컨트롤이 안 들어가서 따로 뺐다.
@@ -1877,9 +1971,18 @@ function renderSum(res) {
   PREV.ok = okNow;
 
   // 미충족 조건은 의뢰 카드 바로 아래에 붙여야 무엇을 더 채워야 하는지 바로 보인다
-  $('#warns').innerHTML = !S.plan.length && !res.bad.length ? '' : `<div class="card warns">
-    <ul class="msgs">${res.bad.length ? res.bad.slice(0, 7).map(m => `<li>${ic("triangle-alert")} ${esc(m)}</li>`).join('')
-      : `<li class="ok">${ic('check')} 모든 조건 충족 — 제출 가능</li>`}</ul></div>`;
+  // 방금 채워진 조건은 바로 지우지 않고 초록으로 바꿔 한 번 더 그린 뒤 사라지게 한다.
+  // 목록을 통째로 다시 그리는 구조라, 다음 render 에서 자연히 빠진다(타이머 불필요).
+  // 같은 조건인지는 괄호 안 현재값을 뺀 부분으로 본다 — "관광지 3곳 이상 필요 (현재 1)" 은
+  // 숫자만 바뀌어도 매번 다른 문자열이라, 그대로 비교하면 아직 미달인데 초록으로 번쩍인다.
+  const wkey = m => m.replace(/\s*\([^)]*\)\s*$/, '');
+  const now = res.bad.slice(0, 7), keys = now.map(wkey);
+  const done = (PREV.warns || []).filter(m => !keys.includes(wkey(m)));
+  PREV.warns = now;
+  $('#warns').innerHTML = !S.plan.length && !res.bad.length && !done.length ? '' : `<div class="card warns">
+    <ul class="msgs">${now.map(m => `<li>${ic("triangle-alert")} ${esc(m)}</li>`).join('')
+      + done.map(m => `<li class="done">${ic('check')} ${esc(wkey(m))}</li>`).join('')
+      + (res.bad.length ? '' : `<li class="ok">${ic('check')} 모든 조건 충족 — 제출 가능</li>`)}</ul></div>`;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1909,6 +2012,9 @@ function addPoi(id, mode) {
   if (!S.quest || whyBlocked(p)) return;
   const i = insertAtDay(S.day);      // 보고 있는 일차에 들어간다
   S.plan.splice(i, 0, { id, mode: mode || 'bus', stay: p.stay });
+  // 체력이 바닥나는 일정은 담지 않는다. whyBlocked 는 "가장 덜 지치는 수단" 으로만 보므로
+  // 수단이 정해진 지금이 정확한 판정 지점이다 — 열 시간 걷는 구간이 여기서 걸린다.
+  if (compute(S).dayStat.some(s => s.low < 0)) { S.plan.splice(i, 1); say('tired'); return; }
   S.sel = i;                         // 방금 넣은 걸 바로 편집할 수 있게
   justAdded = true;
   render();                    // 팝업은 열린 채로 갱신된다 (연박·재방문을 이어서 누를 수 있게)
@@ -1947,7 +2053,7 @@ document.addEventListener('click', ev => {
     const quest = REGIONS[S.region].quests.find(x => x.id === q.dataset.quest);
     if (quest.lv <= level()) {
       S.quest = quest; S.plan = []; S.sel = null; S.day = 0; S.arriveId = null; S.ret = null; S.wake = {}; S.pop = null;
-      $('#pick').close(); render(); openTrip();
+      $('#pick').close(); render(); openLetter(quest);   // 편지를 닫으면 교통편 선택으로 이어진다
     }
     return;
   }
@@ -1988,6 +2094,9 @@ document.addEventListener('click', ev => {
   // 일정표 편집
   const del = near('[data-del]');
   if (del) { S.plan.splice(+del.dataset.del, 1); S.sel = null; render(); return; }
+  // 귀가 교통편 취소. 블록은 두 개(부산 안 귀가 + 도시간 귀가편)지만 지우는 값은 하나다.
+  const dret = near('[data-delret]');
+  if (dret) { S.ret = null; render(); return; }
   const up = near('[data-up]');
   if (up) { const i = +up.dataset.up; if (i > 0) { [S.plan[i - 1], S.plan[i]] = [S.plan[i], S.plan[i - 1]]; S.sel = i - 1; render(); scrollToSel(); } return; }
   const dn = near('[data-down]');
@@ -2031,7 +2140,13 @@ $('#gulist').addEventListener('mouseleave', () => highlight(null));
 document.addEventListener('change', ev => {
   const t = ev.target;
   if (t.dataset.wake !== undefined) { S.wake[+t.dataset.wake] = +t.value; render(); }
-  else if (t.dataset.mode !== undefined) { S.plan[+t.dataset.mode].mode = t.value; render(); }
+  else if (t.dataset.mode !== undefined) {
+    const i = +t.dataset.mode, was = S.plan[i].mode;
+    S.plan[i].mode = t.value;
+    // 바꾼 수단으로 체력이 바닥나면 되돌린다. 넣을 때만 막으면 넣은 뒤에 도보로 바꿔 빠져나간다.
+    if (compute(S).dayStat.some(s2 => s2.low < 0)) { S.plan[i].mode = was; say('tired'); }
+    render();
+  }
   else if (t.dataset.stay !== undefined) { S.plan[+t.dataset.stay].stay = Math.max(10, +t.value || 10); render(); }
 });
 
@@ -2059,7 +2174,7 @@ function submit() {
     </div>
     <div class="rbar" style="margin-top:12px"><i class="xp" id="rxpf"></i></div>
     <div class="rcap"><span>${ic('sparkles')} 경험치</span><span id="rxpn">+${gained} XP</span></div>
-    <div class="rlv" id="rlv" ${up ? '' : 'hidden'}>${ic("party-popper")} 레벨 ${level()} 달성 — 새 장소·의뢰 해금!</div>
+    <div class="rlv" id="rlv" ${up ? '' : 'hidden'}>${ic("party-popper")} 레벨 ${level()} 달성 — 새 의뢰 해금!</div>
     <div class="rbtns" id="rbtns">
       <button class="go" id="rnext">다음 의뢰 고르기</button>
       <button class="go" id="rstay" style="background:var(--panel2);color:var(--fg);margin-top:6px">이 의뢰 계속 다듬기</button>
@@ -2170,6 +2285,9 @@ $('#askno').onclick = () => { $('#ask').close(); askCb = null; };
 $('#ask').addEventListener('cancel', () => { askCb = null; });
 
 $('#pickclose').onclick = () => $('#pick').close();
+// 편지는 버튼으로 닫든 Esc 로 닫든 교통편 선택으로 이어져야 한다 — close 이벤트에 건다.
+$('#letgo').onclick = () => $('#letter').close();
+$('#letter').addEventListener('close', () => openTrip());
 // 아직 의뢰를 안 골랐으면 Esc 로 닫지 못하게 (닫아봐야 할 게 없다)
 $('#pick').addEventListener('cancel', e => { if (!S.quest) e.preventDefault(); });
 $('#trip').addEventListener('cancel', e => { if (!S.arriveId) e.preventDefault(); });
@@ -2186,6 +2304,16 @@ if (location.search.includes('test')) {
   const ok = (c, m) => console[c ? 'log' : 'error'](c ? '✔' : '✘ FAIL', m);
   const R = REGIONS.busan, get = id => R.pois.find(p => p.id === id);
   const home = R.starts[0];
+
+  // 의뢰인 편지 — 조건을 데이터에서 만들므로 의뢰를 늘리거나 수치를 바꿔도 빠지면 안 된다.
+  // (렌더 구역 함수라 node selftest 에는 없다. 브라우저 ?test 에서만 돈다.)
+  if (typeof letterBody === 'function') R.quests.forEach(q => {
+    const t = letterBody(q).replace(/<[^>]*>/g, '');
+    const miss = q.must.filter(id => !t.includes(get(id).name));
+    ok(!miss.length && t.includes(won(q.budget)) && t.includes(`${q.minSights}곳`)
+       && (!q.banModes || q.banModes.every(m => t.includes(TRANSPORT[m].name)))
+       && (!q.endBy || t.includes(hhmm(q.endBy))), `${q.id} 편지에 조건 전부 표시`);
+  });
 
   // 부산역→해운대 실제 약 15km / 대중교통 40~50분
   const d = km(home, get('haeundae')) * DETOUR;

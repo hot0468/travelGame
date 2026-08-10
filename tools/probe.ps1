@@ -9,22 +9,23 @@
 param(
   [string]$Page = '_cal.html',
   [int]$Budget = 5000,
-  [int]$Tries = 3
+  [int]$Tries = 3,
+  [int]$TimeoutSec = 60
 )
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $root = Split-Path -Parent $PSScriptRoot
-$edge = @("C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-          "C:\Program Files\Microsoft\Edge\Application\msedge.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
-if (-not $edge) { Write-Error "Edge 없음"; exit 1 }
+. (Join-Path $PSScriptRoot 'edgerun.ps1')
+Stop-StrayEdge                     # 앞 실행이 남긴 헤드리스 Edge 를 먼저 치운다
 $url = "file:///" + ($root -replace '\\','/') + "/$Page"
 
 for ($i = 1; $i -le $Tries; $i++) {
   $udd = Join-Path $env:TEMP ('cc_edge_' + [guid]::NewGuid().ToString('N'))
   $tmp = Join-Path $env:TEMP ('probe_' + [guid]::NewGuid().ToString('N') + '.html')
-  Start-Process -FilePath $edge -ArgumentList @(
+  $done = Invoke-Edge -EdgeArgs @(
       '--headless','--disable-gpu',"--user-data-dir=$udd",'--no-first-run','--disable-extensions',
       '--dump-dom','--window-size=1600,1000',"--virtual-time-budget=$Budget",$url
-    ) -RedirectStandardOutput $tmp -NoNewWindow -Wait
+    ) -StdOut $tmp -TimeoutSec $TimeoutSec
+  if (-not $done) { Write-Warning "Edge 가 ${TimeoutSec}초 안에 안 끝나 강제 종료했다 (시도 $i/$Tries)" }
   $dom = if (Test-Path $tmp) { Get-Content $tmp -Raw -Encoding UTF8 } else { '' }
   if ($null -eq $dom) { $dom = '' }
   Remove-Item $tmp -Force -ErrorAction SilentlyContinue

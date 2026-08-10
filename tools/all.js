@@ -13,6 +13,15 @@ for (const name of suites) {
   const out = (r.stdout || '') + (r.stderr || '') + (r.error ? r.error.message : '');
   const ok = (out.match(/✔/g) || []).length;
   const bad = (out.match(/✘/g) || []).length;
+  // 스위트가 중간에 죽으면 ✘ 없이 ✔ 개수만 줄어 "전부 통과" 가 찍힌다.
+  // 검사 실패는 ✘ 로 이미 잡히니, ✘ 가 없는데 비정상 종료면 그건 뻗은 것이다.
+  // (ruletest 가 이렇게 22건을 조용히 잃은 적이 있다.)
+  if (r.status !== 0 && !bad) {
+    fails++;
+    console.log(`${name.padEnd(9)} ✘ 비정상 종료(code ${r.status}) — 검사 ${ok}건만 돌았다`);
+    console.log('  ' + (out.split('\n').find(l => /Error/.test(l)) || '').trim());
+    continue;
+  }
   fails += bad;
   console.log(`${name.padEnd(9)} ✔${ok}${bad ? `  ✘${bad}` : ''}`);
   if (bad) console.log(out.split('\n').filter(l => l.includes('✘')).map(l => '  ' + l).join('\n'));
