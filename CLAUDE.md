@@ -15,7 +15,7 @@ data/bus.js     시내버스 경유 노선. REGIONS.busan.bus = { lines{}, near{
                 tools/mkbus.js 가 부산버스정보시스템 OpenAPI 에서 생성한다(수기 편집 금지).
 data/transit.js 버스+지하철 통합 경로표(9,591쌍). REGIONS.busan.transit = { st[], ln[], ord[],
                 lines{}, pair[] }. tools/mktransit.js 가 생성한다(수기 편집 금지).
-assets/         지도 SVG (CC BY-SA — 아래 라이선스 참조)
+assets/         지도 SVG. tools/mkmap.js 가 통계청 경계로 생성한다(수기 편집 금지).
 tools/          검증·캡처 스크립트 (아래)
 ```
 
@@ -76,10 +76,14 @@ powershell -NoProfile -File tools/probe.ps1                                     
 
 ## 라이선스 (배포물이므로 지켜야 함)
 
-- 지도 `assets/busan-map-geo.svg`: 위키미디어 부산 행정구역도, © 밥풀떼기, **CC BY-SA 4.0**.
-  원본에서 지명 레이어만 제거한 파생물 — 앱 하단·README 의 저작자/라이선스/수정 표기를
-  지울 수 없다. SVG를 index.html 에 인라인하지 말 것(코드까지 SA에 묶일 소지).
-  재보정 근거: 기장 북단 y=6px=35.3866, 태종대 y=692px=35.0517, 경도축척=위도축척×cos(35.1°).
+- 지도 `assets/busan-map-kostat.svg`: 통계청 2018 센서스용 행정구역경계에서 부산 16개
+  구·군만 뽑아 `tools/mkmap.js` 가 그린다. 원본이 "Free to share or remix" 라 **파생물에
+  라이선스가 따라붙지 않는다** — 앱 하단·README 의 출처 표시만 지키면 상업적 이용도 자유다.
+  (이전에는 위키미디어 CC BY-SA 지도였다. SA 전염과 저작자 표기 의무를 없애려고 바꿨다.)
+  - 재생성: `node tools/mkmap.js`. 캔버스·bounds 를 `data/busan.js` 의 mapImage 와 같게 맞추므로
+    **POI 좌표는 건드리지 않아도 된다**(교체 후 136곳 전부 제 구역 안에 들어옴을 확인했다).
+  - 원본 저장소(southkorea/southkorea-maps)의 `gadm/` 계열은 **비상업 전용**이다. 반드시
+    `kostat/` 경로만 쓴다.
 - Lucide 아이콘: ISC. 스프라이트 상단 주석 유지.
 
 ## 게임 규칙 요약 (수치 바꿀 때 참고)

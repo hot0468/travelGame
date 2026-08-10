@@ -35,8 +35,8 @@ assets/             지도
 ## 사용한 저작물
 
 - 지도 — [부산 행정구역도](https://commons.wikimedia.org/wiki/File:Busan-Administrative_divisions-ko.svg),
-  © 밥풀떼기, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
-  **수정함**: 지명(글자) 레이어를 제거해 지형만 남기고 `assets/busan-map-geo.svg` 로 저장.
-  지명은 게임이 직접 그린다. 이 파일은 원저작물과 같은 CC BY-SA 4.0 으로 배포된다.
+  통계청 2018 센서스용 행정구역경계에서 부산 16개 구·군만 뽑아 `tools/mkmap.js` 가 그린다
+  (`assets/busan-map-kostat.svg`). 원본이 "Free to share or remix" 라 파생물에 라이선스가
+  따라붙지 않는다 — 출처만 밝히면 상업적 이용도 자유다. 지명은 게임이 직접 그린다.
 - 아이콘 — [Lucide](https://lucide.dev), ISC License, © Lucide Contributors.
   `index.html` 상단에 SVG 스프라이트로 인라인되어 있다.

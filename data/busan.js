@@ -6,21 +6,21 @@ REGIONS.busan = {
   name: '부산',
   // 실제 행정구역 지도. 이게 있으면 배경으로 깔고 투영도 여기 bounds 를 따름.
   // bounds 는 이미지 네 모서리의 위경도 — 핀이 어긋나면 이 네 값만 만지면 됨.
-  // 출처: 위키미디어 공용, 저작자 밥풀떼기, CC BY-SA 4.0.
-  // 수정: 지명(글자) 레이어를 제거해 지형만 남김 → busan-map-geo.svg.
+  // 출처: 통계청 2018 센서스용 행정구역경계. tools/mkmap.js 가 구·군 경계만 뽑아 그린다.
+  // 지명은 아래 labels 로 게임이 직접 그린다(원본에는 글자가 없다).
   //       확대하면 이미지에 박힌 글자까지 같이 커져 화면을 덮으므로, 지명은 아래 labels 로
   //       분리해 게임이 직접 그린다(배율과 무관하게 항상 같은 크기).
   //       labels 좌표는 원본의 글자 위치를 픽셀 단위로 추출한 값이라 배치가 원본과 동일함.
   mapImage: {
-    src: 'assets/busan-map-geo.svg',
+    src: 'assets/busan-map-kostat.svg',
     vw: 852.411, vh: 822.913,          // 원본 SVG 캔버스 크기
     // 보정 근거: 기장 북단(y=6px)=35.3866, 영도 남단 태종대(y=692px)=35.0517 두 점으로
     // 위도 축척 2048.4px/° 산출. 경도 축척은 그 × cos(35.1°)=1675.6px/° (정합오차 <500m).
     bounds: { w: 128.7946, e: 129.3033, n: 35.3895, s: 34.9878 },
-    credit: '밥풀떼기', license: 'CC BY-SA 4.0',
-    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/deed.ko',
-    sourceUrl: 'https://commons.wikimedia.org/wiki/File:Busan-Administrative_divisions-ko.svg',
-    modified: '지명 레이어 분리',
+    // 통계청 센서스용 행정구역경계로 tools/mkmap.js 가 직접 그린다.
+    // 원본이 "Free to share or remix" 라 CC BY-SA 처럼 파생물이 묶이지 않는다 — 출처만 밝히면 된다.
+    credit: '통계청', license: '2018 센서스용 행정구역경계',
+    sourceUrl: 'https://sgis.kostat.go.kr/',
 
     // 지명. kind: 'gu' 행정구역 / 'sea' 바다·인접 지역(옅게, 자간 넓게)
     labels: [
