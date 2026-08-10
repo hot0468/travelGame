@@ -107,3 +107,56 @@ const P = (a, b) => subwayPath(a, b);
   const bs = nearestStation(poi('beomeosa'));
   ok(bs.km > 2, `범어사는 최근접역(${bs.st}역)에서 ${bs.km.toFixed(1)}km — 역세권 아님`);
 }
+
+// ── 역간 소요시간·거리 (data/subway.js 의 gap)
+// 경로 가중치가 실측 초라 "정거장 수는 많아도 빠른 길" 을 제대로 고른다.
+{
+  ok(!!SW.gap, 'gap 데이터 있음');
+  SW.lines.forEach(L => ok(SW.gap[L.id] && SW.gap[L.id].length === L.st.length - 1,
+    `${L.name} 구간 ${(SW.gap[L.id] || []).length}개 = 역 ${L.st.length}-1`));
+  // 값의 범위 — 역간 0.5~3.5km, 60~260초를 벗어나면 데이터가 깨진 것
+  const bad = [];
+  for (const id in SW.gap) SW.gap[id].forEach(([d, t], i) => {
+    if (!(d > 0.4 && d < 4) || !(t >= 60 && t <= 270)) bad.push(`${id}호선[${i}] ${d}km ${t}초`);
+  });
+  ok(!bad.length, '역간 거리·시간 범위 정상: ' + (bad.join(', ') || '이상 없음'));
+  // 표정속도 — 주행만 따지면 20~55km/h 안에 들어야 한다
+  const sp = [];
+  for (const id in SW.gap) SW.gap[id].forEach(([d, t]) => sp.push(d / (t / 3600)));
+  ok(sp.every(v => v > 18 && v < 56), `표정속도 ${Math.min(...sp).toFixed(0)}~${Math.max(...sp).toFixed(0)}km/h`);
+}
+// ── 소요시간 반환값
+{
+  const p = P(R.starts[0], poi('haeundae'));
+  ok(p.min > 0, `부산역→해운대 ${p.min}분 (승차 ${p.rideMin} + 환승 ${p.transferMin})`);
+  ok(p.min === p.rideMin + p.transferMin, '총시간 = 승차 + 환승');
+  ok(p.min > 35 && p.min < 60, `실제 소요시간과 맞는 범위 (${p.min}분, 실제 약 45분)`);
+  ok(Math.abs(p.rideKm - 19.9) < 2, `승차거리 ${p.rideKm}km (실제 약 20km)`);
+  ok(p.legs.every(l => l.min > 0), '구간별 분이 모두 채워짐: ' + p.legs.map(l => l.min + '분').join(' + '));
+  ok(Math.abs(p.legs.reduce((s, l) => s + l.min, 0) - p.rideMin) <= 1, '구간 분 합 == 승차 분');
+}
+{
+  const p = P(R.starts[0], poi('jagalchi'));    // 3정거장 직통
+  ok(p.min >= 4 && p.min <= 8, `부산역→자갈치 ${p.min}분 (3정거장 직통, 실제 약 5분)`);
+  ok(p.transferMin === 0, '직통은 환승시간 0');
+}
+// 정거장 수가 아니라 시간으로 고르는가 — 센텀시티→범어사는 2회 환승이 서면 1회보다 빠르다
+{
+  const p = P(poi('centum'), poi('beomeosa'));
+  const legMin = (line, a, b) => {           // 같은 노선 구간을 손으로 더해 대조군을 만든다
+    const L = SW.lines.find(x => x.id === line);
+    const i = L.st.indexOf(a), j = L.st.indexOf(b);
+    let t = 0; for (let k = Math.min(i, j); k < Math.max(i, j); k++) t += SW.gap[line][k][1] + 25;
+    return t / 60;
+  };
+  const viaSeomyeon = legMin('2', '센텀시티', '서면') + legMin('1', '서면', '범어사') + 5;
+  ok(p.min < viaSeomyeon, `센텀시티→범어사: 고른 길 ${p.min}분 < 서면 경유 ${viaSeomyeon.toFixed(0)}분`);
+  ok(p.transfers === 2, `정거장은 더 들러도 빠른 2회 환승을 고름 (${p.transfers}회)`);
+}
+// 모든 표본 쌍에서 시간이 상식 범위인가
+{
+  const sample = R.pois.filter((_, i) => i % 11 === 0).slice(0, 14);
+  const times = [];
+  sample.forEach(a => sample.forEach(b => { if (a !== b) { const p = P(a, b); if (p) times.push(p.min); } }));
+  ok(times.every(t => t > 0 && t < 130), `표본 ${times.length}쌍 소요시간 ${Math.min(...times)}~${Math.max(...times)}분`);
+}
