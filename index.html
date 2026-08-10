@@ -98,7 +98,11 @@
   /* 지도 위 장소 상세 팝업 */
   #poipop{position:fixed;z-index:18;width:236px;background:var(--panel);border:3px solid var(--ink);
           border-radius:18px;padding:12px 14px;box-shadow:5px 6px 0 rgba(59,50,97,.20);
-          transform-origin:50% 100%;animation:popin .26s cubic-bezier(.34,1.56,.64,1)}
+          transform-origin:50% 100%;overflow:hidden;animation:popin .26s cubic-bezier(.34,1.56,.64,1)}
+  /* 장소 사진. 파일이 없으면 onerror 가 이 요소를 지우므로 빈 자리가 남지 않는다. */
+  #poipop .shot{display:block;width:calc(100% + 28px);margin:-12px -14px 9px;height:104px;
+                object-fit:cover;border-bottom:3px solid var(--ink);
+                border-radius:15px 15px 0 0;background:var(--panel2)}
   /* 팝업이 아래에서 튀어오르며 살짝 넘겼다 제자리로 */
   @keyframes popin{from{opacity:0;transform:scale(.7) translateY(14px)}to{opacity:1;transform:none}}
   /* 선택한 핀에서 퍼져나가는 파동 */
@@ -1563,7 +1567,10 @@ function openPoi(id) {
     : `${p.type === 'food' ? ic(FOODT(p).ico) + ' ' + FOODT(p).name + (p.sub === 'cafe' ? ' <span style="color:var(--dim)">· 체력 회복 절반</span>' : '') : ic(SUBT(p).ico) + ' ' + SUBT(p).name + (likesSub(S.quest, p) ? ' <b style="color:var(--ok)">· 선호 +3</b>' : '')}<br>${ic('wallet')} ${p.cost ? won(p.cost) + ' / 1인' : '무료'}
        <br>${ic('timer')} 권장 체류 ${p.stay}분<br>${ic('clock')} ${hhmm(p.open[0])} ~ ${hhmm(p.open[1])}`;
 
-  pop.innerHTML = `<div class="hd">
+  // 사진은 있으면 보이고 없으면 스스로 사라진다(assets/photos/<id>.jpg).
+  pop.innerHTML = `<img class="shot" src="assets/photos/${encodeURIComponent(id)}.jpg" alt=""
+      onerror="this.remove()">
+    <div class="hd">
       <h4>${must ? ic("star") + " " : ""}${esc(p.name)}</h4>
       <span class="x" data-act="closepop" style="margin:0">${ic("x")}</span>
     </div>
