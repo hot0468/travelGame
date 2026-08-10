@@ -51,4 +51,4 @@ ok(mm.cap < ee.cap, `아침형이 늦게 자면 더 손해 (아침형 ${mm.cap} 
 // 체력 소진은 위반으로 잡힌다
 const hard=compute({region:'busan',quest:Object.assign({},R.quests[3]),arriveId:'ktx',
   plan:Array.from({length:6},()=>({id:'beomeosa',mode:'bus',stay:200}))});
-ok(hard.bad.some(m=>m.includes('체력 소진')), '체력 소진 감지');
+ok(hard.warn.some(m=>m.includes('체력 소진')), '체력 소진 감지 (제출은 되고 별이 0)');

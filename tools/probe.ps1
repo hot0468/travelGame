@@ -10,7 +10,9 @@ param(
   [string]$Page = '_cal.html',
   [int]$Budget = 5000,
   [int]$Tries = 3,
-  [int]$TimeoutSec = 60
+  [int]$TimeoutSec = 60,
+  [int]$W = 1600,                   # 반응형 확인은 -W 390 -H 844 처럼 창 크기를 지정한다
+  [int]$H = 1000
 )
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $root = Split-Path -Parent $PSScriptRoot
@@ -23,7 +25,7 @@ for ($i = 1; $i -le $Tries; $i++) {
   $tmp = Join-Path $env:TEMP ('probe_' + [guid]::NewGuid().ToString('N') + '.html')
   $done = Invoke-Edge -EdgeArgs @(
       '--headless','--disable-gpu',"--user-data-dir=$udd",'--no-first-run','--disable-extensions',
-      '--dump-dom','--window-size=1600,1000',"--virtual-time-budget=$Budget",$url
+      '--dump-dom',"--window-size=$W,$H","--virtual-time-budget=$Budget",$url
     ) -StdOut $tmp -TimeoutSec $TimeoutSec
   if (-not $done) { Write-Warning "Edge 가 ${TimeoutSec}초 안에 안 끝나 강제 종료했다 (시도 $i/$Tries)" }
   $dom = if (Test-Path $tmp) { Get-Content $tmp -Raw -Encoding UTF8 } else { '' }

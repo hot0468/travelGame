@@ -69,7 +69,7 @@ ok(withRet.spend - noRet.spend > oneWay, `귀가 지정 시 도시간 왕복 요
                { id: 'gh_nampo', mode: 'taxi', stay: 0 }, { id: 'haeundae', mode: 'taxi', stay: 600 }];
   const m = compute({ region: 'busan', quest: q, arriveId: 'ktx', buffs: [], plan: mid, ret: { mode: 'taxi' } });
   const dueAbs = (m.days - 1) * 1440 + q.endBy;
-  ok(m.back.end <= dueAbs && m.back.end + m.back.home.min > dueAbs && !m.bad.some(x => x.includes('귀가 마감')),
+  ok(m.back.end <= dueAbs && m.back.end + m.back.home.min > dueAbs && !m.warn.some(x => x.includes('귀가 마감')),
      `마감은 출발지점 도착 기준 (부산역 ${hhmm(m.back.end)} ≤ ${hhmm(q.endBy)} · 집 도착 ${hhmm(m.back.end + m.back.home.min)} 은 무관)`);
   const slow = compute({ region: 'busan', quest: q, arriveId: 'bus', buffs: [], plan: P, ret: { mode: 'bus' } });
   const fast = compute({ region: 'busan', quest: q, arriveId: 'air', buffs: [], plan: P, ret: { mode: 'bus' } });
@@ -189,12 +189,12 @@ ok(!bust.bad.some(m => m.includes('예산 초과')), '예산 초과가 제출을
   const late = [{ id: 'gamcheon', mode: 'taxi', stay: 120 }, { id: 'dwaeji', mode: 'taxi', stay: 60 },
                 { id: 'gh_nampo', mode: 'taxi', stay: 0 }, { id: 'haeundae', mode: 'taxi', stay: 780 }];
   const over = compute({ region: 'busan', quest: q, arriveId: 'ktx', buffs: [], plan: late, ret: { mode: 'taxi' } });
-  ok(over.bad.some(m => m.includes('귀가 마감')), '늦게 끝내면 마감 위반: ' + (over.bad.find(m => m.includes('귀가 마감')) || '없음'));
+  ok(over.warn.some(m => m.includes('귀가 마감')), '늦게 끝내면 마감 위반: ' + (over.warn.find(m => m.includes('귀가 마감')) || '없음'));
 
   // 같은 일정을 짧게 끝내면 통과
   const early = late.map(e => ({ ...e, stay: e.id === 'haeundae' ? 90 : e.stay }));
   const okRes = compute({ region: 'busan', quest: q, arriveId: 'ktx', buffs: [], plan: early, ret: { mode: 'taxi' } });
-  ok(!okRes.bad.some(m => m.includes('귀가 마감')), '일찍 끝내면 마감 통과');
+  ok(!okRes.warn.some(m => m.includes('귀가 마감')), '일찍 끝내면 마감 통과');
   ok(okRes.back.end <= (okRes.days - 1) * 1440 + q.endBy,
      `귀가 도착 ${hhmm(okRes.back.end)} ≤ 마감 ${hhmm(q.endBy)}`);
 

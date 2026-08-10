@@ -23,7 +23,9 @@ const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
 const R = REGIONS.busan;
 const levelOf = q => q.lv; // 그 의뢰가 열리는 레벨에서 쓸 수 있는 장소만 사용
 
+const ONLY = process.env.QUEST;   // QUEST=q4 로 한 의뢰만 길게 돌려 볼 수 있다
 for (const q of R.quests) {
+  if (ONLY && q.id !== ONLY) continue;
   const pool = R.pois;   // 장소는 레벨 제한 없이 전부 열려 있다
   const sights = pool.filter(p => p.type === 'sight' && !q.must.includes(p.id));
   const foods = pool.filter(p => p.type === 'food');
@@ -33,7 +35,10 @@ for (const q of R.quests) {
 
   // 한 후보의 이동수단을 구간별로 훑어 가장 좋은 것으로 바꾼다.
   // 플레이어는 수단을 굴리지 않고 고르므로, 이렇게 재야 실제 도달 가능한 점수가 나온다.
-  const val = r => r.bad.length ? -1e9 - r.bad.length : r.score;   // 위반이 있으면 무조건 열세
+  // 위반이 있으면 무조건 열세. warn(필수 코스 누락·마감 초과 등)은 제출은 되지만 별이 0 이라
+  // 상한 탐색에서는 bad 와 똑같이 실격으로 봐야 한다 — 안 그러면 조건을 버린 일정이 상한을 만든다.
+  const nBad = r => r.bad.length + r.warn.length;
+  const val = r => nBad(r) ? -1e9 - nBad(r) : r.score;
   const polish = (plan, arriveId, wake, ret) => {
     let cur = compute({ region: 'busan', quest: q, arriveId, wake, plan, ret });
     for (let pass = 0; pass < 2; pass++) {
@@ -48,11 +53,21 @@ for (const q of R.quests) {
         }
         plan[i].mode = keep;
       }
+      // 같은 날 이웃한 두 곳의 순서를 바꿔 본다. 조합(pairs)은 이어 붙였을 때만 붙으므로
+      // 순서를 안 훑으면 상한이 과소평가된다. 숙소는 날짜 경계라 자리를 지킨다.
+      for (let i = 0; i + 1 < plan.length; i++) {
+        if (poi(plan[i].id).type === 'stay' || poi(plan[i + 1].id).type === 'stay') continue;
+        const sw = () => { const t = plan[i]; plan[i] = plan[i + 1]; plan[i + 1] = t; };
+        sw();
+        const r = compute({ region: 'busan', quest: q, arriveId, wake, plan, ret });
+        if (val(r) > val(cur)) { cur = r; moved = true; } else sw();
+      }
       if (!moved) break;
     }
     return cur;
   };
 
+  const PJ = R.pairs || [];
   let best = null; const why = {}; let minSpend = Infinity;
   for (let it = 0; it < ITER; it++) {
     const pick = [...q.must.map(id => poi(id))];
@@ -60,6 +75,24 @@ for (const q of R.quests) {
     const pS = [...sights].sort(() => Math.random() - .5).slice(0, Math.max(0, nS + (Math.random() < .3 ? 1 : 0)));
     const pF = [...foods].sort(() => Math.random() - .5).slice(0, q.days + (Math.random() < .5 ? 0 : 1));
     let all = [...pick, ...pS, ...pF].sort(() => Math.random() - .5);
+    // 조합을 아는 사람은 짝을 함께 넣고 이어서 돈다. 무작위로만 뽑으면 33쌍 중 하나도 안 걸려
+    // 상한이 조합 없는 점수로 잡히고, 그러면 par 가 헐거워져 아는 사람에게 ★3 이 공짜가 된다.
+    if (Math.random() < .7) {
+      const have = new Set(all.map(p => p.id));
+      let added = 0;                               // 한쪽만 있으면 짝을 데려온다 —
+      for (const pr of PJ) {                       // 무제한이면 일정이 비대해져 체력·예산에서 다 죽는다
+        if (added >= 2) break;
+        const solo = have.has(pr.a) ? pr.b : have.has(pr.b) ? pr.a : null;
+        if (solo && !have.has(solo) && Math.random() < .5) { all.push(poi(solo)); have.add(solo); added++; }
+      }
+      for (let i = 0; i < all.length; i++) {       // 짝을 바로 뒤로 끌어와 붙인다
+        const pr = PJ.find(x => x.a === all[i].id || x.b === all[i].id);
+        if (!pr) continue;
+        const other = pr.a === all[i].id ? pr.b : pr.a;
+        const j = all.findIndex((p, k) => k > i + 1 && p.id === other);
+        if (j > 0) { all.splice(i + 1, 0, all.splice(j, 1)[0]); i++; }
+      }
+    }
     // 숙소를 하루 끝마다 끼워넣기
     // 연박 허용: 매일 독립적으로 뽑음
     const stays = Array.from({ length: q.days - 1 }, () => stayPool[Math.random() * stayPool.length | 0]);
@@ -78,9 +111,9 @@ for (const q of R.quests) {
     for (let d = 1; d < q.days; d++) wake[d] = 360 + (Math.random() * 8 | 0) * 30;
     const ret = { mode: modes[Math.random() * modes.length | 0] };   // 귀가 수단도 선택지
     const res = polish(plan, arriveId, wake, ret);
-    res.bad.forEach(m => { const k = m.replace(/[\d,]+원?/g, 'N').split(':')[0]; why[k] = (why[k] || 0) + 1; });
+    res.bad.concat(res.warn).forEach(m => { const k = m.replace(/[\d,]+원?/g, 'N').split(':')[0]; why[k] = (why[k] || 0) + 1; });
     minSpend = Math.min(minSpend, res.spend);
-    if (!res.bad.length && (!best || res.score > best.score)) best = { score: res.score, res, plan, arriveId, wake };
+    if (!nBad(res) && (!best || res.score > best.score)) best = { score: res.score, res, plan, arriveId, wake };
   }
   if (!best) {
     console.error(`✘ [${q.id}] ${q.title} — 유효한 일정을 못 찾음`);

@@ -283,38 +283,91 @@ REGIONS.busan = {
     { id: 'gh_seomyeon', gu: '부산진구', name: '서면 게스트하우스', type: 'stay', tier: 'guesthouse', lat: 35.1560, lng: 129.0580, cost: 27000, stay: 0, joy: 4, open: [900, 1440] },
   ],
 
+  // 이어서 붙이면 손님이 특히 좋아하는 조합. 직전 일정과 방금 넣은 일정이 짝이면 성립하고,
+  // 순서는 가리지 않는다(a→b, b→a 모두). joy 는 그 자리에서 만족도에 더해진다.
+  // 근접 보상이 되면 점수식의 -이동분과 중복이라 아무 결정도 못 만든다 —
+  // 그래서 "같은 동네"가 아니라 실제로 이어 도는 코스만 넣었고, 일부는 거리를 감수하게 뒀다.
+  pairs: [
+    // 원도심 — 시장에서 시장으로, 구경하고 바로 먹는 코스
+    { a: 'jagalchi', b: 'hoe', joy: 8, say: '자갈치 구경하고 바로 회라니, 제대로네요!' },
+    { a: 'jagalchi', b: 'gukje', joy: 7, say: '자갈치에서 국제시장까지, 원도심 시장 한 바퀴네요' },
+    { a: 'gukje', b: 'hotteok', joy: 7, say: '국제시장 돌고 씨앗호떡, 이건 못 참죠' },
+    { a: 'biff', b: 'yasijang', joy: 7, say: 'BIFF광장에서 야시장까지 밤이 길겠어요' },
+    { a: 'yongdusan', b: 'history', joy: 6, say: '용두산 내려와서 역사관까지, 차분하고 좋아요' },
+    // 영도 — 흰여울과 태종대
+    { a: 'huinyeoul', b: 'huincafe', joy: 8, say: '흰여울 걷고 바다 보며 커피, 딱 좋아요' },
+    { a: 'taejongdae', b: 'eomuk', joy: 7, say: '태종대 보고 어묵 사가는 게 영도 정석이죠' },
+    { a: 'gamcheon', b: 'huinyeoul', joy: 9, say: '감천에서 흰여울까지! 벽화마을 두 곳을 다 보네요' },
+    // 사하 — 감천과 다대포 낙조
+    { a: 'gamcheon', b: 'gamchennoodle', joy: 6, say: '감천 다 돌고 칼국수 한 그릇, 든든하겠어요' },
+    { a: 'dadaepo', b: 'dadaecafe', joy: 8, say: '낙조분수 보고 선셋 카페까지, 해 지는 걸 다 보겠네요' },
+    { a: 'dadaepo', b: 'dadaejogae', joy: 8, say: '다대포 노을에 조개구이라니 낭만적이에요' },
+    // 서구·남구 — 해안 산책길
+    { a: 'songdo', b: 'haenyeo', joy: 8, say: '케이블카 타고 내려와 해녀촌 해산물, 좋은 순서예요' },
+    { a: 'oryukdo', b: 'igidae', joy: 8, say: '오륙도에서 이기대로 이어 걷는군요, 갈맷길 그대로네요' },
+    { a: 'igidae', b: 'igidaecafe', joy: 8, say: '이기대 걷고 바다 보이는 카페에서 쉬는 거군요' },
+    { a: 'hwangnyeong', b: 'ksgopchang', joy: 7, say: '야경 보고 내려와 곱창이라니, 밤이 좋겠어요' },
+    // 광안리·민락
+    { a: 'gwangalli', b: 'jogae', joy: 8, say: '광안대교 보면서 조개구이, 이게 부산이죠' },
+    { a: 'gwangalli', b: 'millaksu', joy: 7, say: '광안리에서 수변공원까지 이어 걷는군요' },
+    { a: 'millaksu', b: 'millak', joy: 9, say: '수변공원 보고 회타운이라니, 아는 사람 코스네요!' },
+    { a: 'f1963', b: 'mangmi', joy: 8, say: 'F1963 보고 망미단길까지, 요즘 제일 좋아하는 동네예요' },
+    // 해운대·청사포·송정
+    { a: 'haeundae', b: 'galbi', joy: 9, say: '해운대 보고 암소갈비집이라니 제대로 아시네요!' },
+    { a: 'haeundae', b: 'dalmaji', joy: 8, say: '해수욕장에서 달맞이고개로, 노을이 예쁘겠어요' },
+    { a: 'xthesky', b: 'haeundae', joy: 7, say: '위에서 내려다보고 아래로 내려가는군요' },
+    { a: 'chungsapo', b: 'skycapsule', joy: 9, say: '전망대 보고 스카이캡슐까지! 청사포를 제대로 보네요' },
+    { a: 'songjeong', b: 'surfcafe', joy: 8, say: '송정 바다 보고 서핑 카페라니 시원하겠어요' },
+    { a: 'moak', b: 'cinecenter', joy: 7, say: '미술관에서 영화의전당까지, 하루가 문화로 꽉 찼네요' },
+    // 기장 — 오시리아
+    { a: 'yongkungsa', b: 'lotteworld', joy: 8, say: '용궁사 보고 롯데월드까지, 오시리아를 다 도네요' },
+    { a: 'yongkungsa', b: 'myeolchi', joy: 8, say: '용궁사 다녀와서 대변항 멸치회, 좋은 조합이에요' },
+    // 금정 — 범어사
+    { a: 'beomeosa', b: 'sanchae', joy: 8, say: '범어사 보고 산채정식이라니 딱 맞네요' },
+    { a: 'beomeosa', b: 'teahouse', joy: 7, say: '절 보고 찻집에서 한숨 돌리는군요' },
+    { a: 'beomeosa', b: 'sanseong', joy: 8, say: '범어사에서 산성 막걸리까지, 금정산을 제대로 도네요' },
+    // 동래·동구·부산진
+    { a: 'dongnaepajeon', b: 'nongshim', joy: 8, say: '파전 먹고 허심청에서 온천이라니, 오늘 잘 자겠어요' },
+    { a: 'ibagu', b: 'choryang', joy: 7, say: '이바구길 내려와서 초량 밀면, 동네를 아시는군요' },
+    { a: 'seomyeongalbi', b: 'jeonpo', joy: 7, say: '고기 먹고 전포 카페거리라니 자연스럽네요' },
+  ],
+
   quests: [
     {
       id: 'q1', lv: 1, title: '첫 손님 · 바다가 보고 싶어요',
       from: '서울', stamina: 110, staminaType: 'energizer', age: '20대', startDow: 4,
       desc: '서울에서 갑니다. 부산 처음이에요. 바다만 보면 돼요.',
-      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, endBy: 1260, par: 148
+      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, endBy: 1260, par: 290
     },
     {
       id: 'q2', lv: 1, title: '뚜벅이 커플 · 알뜰하게',
       from: '대구', stamina: 100, staminaType: 'morning', age: '30대', startDow: 5,
       desc: '대구에서 갑니다. 부산에선 대중교통만 탈게요. 감천이랑 자갈치는 꼭이요!',
       days: 2, budget: 240000, people: 2, must: ['gamcheon', 'jagalchi'], minSights: 4,
-      banModes: ['taxi', 'car'], endBy: 1200, par: 259
+      banModes: ['taxi', 'car'], endBy: 1200, par: 441
     },
     {
       id: 'q3', lv: 2, title: '당일치기 출장 뒤풀이',
       from: '대구', stamina: 95, staminaType: 'night', age: '40대', startDow: 2,
       desc: '대구에서 아침에 출발해 당일로 다녀옵니다. 용궁사는 꼭 보고 싶어요. 셋이서 갑니다.',
-      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, endBy: 1380, par: 155
+      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, endBy: 1380, par: 331
     },
     {
       id: 'q4', lv: 3, title: '부모님 효도여행',
       from: '광주', stamina: 75, staminaType: 'motionsick', age: '60대 이상', startDow: 1,
       desc: '광주에서 부모님 모시고 갑니다. 많이 걷긴 힘드세요. 숙소는 호텔로.',
-      days: 3, budget: 1100000, people: 4, must: ['taejongdae', 'beomeosa'], minSights: 5,
-      minStayTier: 'hotel', endBy: 1140, par: 210
+      // 예산 110만은 4인·3일·호텔 필수에 애초에 모자랐다 — 초과가 감점뿐이던 시절엔 그냥 넘겨서
+      // 문제가 안 됐지만, 초과를 실패로 바꾼 뒤로는 풀리지 않는 의뢰가 된다. 광주 KTX 4인 왕복
+      // 20만 + 호텔 2박 2객실 + 4인 식사 3일 기준으로 170만이 실제 하한선에 가깝다.
+      days: 3, budget: 1700000, people: 4, must: ['taejongdae', 'beomeosa'], minSights: 5,
+      minStayTier: 'hotel', endBy: 1140, par: 437
     },
     {
       id: 'q5', lv: 4, title: '아이 둘 데리고 가는 가족',
       from: '제주', stamina: 90, staminaType: 'morning', age: '아이 동반', startDow: 4,
       desc: '제주에서 아이 둘 데리고 갑니다. 롯데월드는 필수! 이동은 편했으면 해요.',
-      days: 3, budget: 1200000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, endBy: 1200, par: 335
+      // 같은 이유로 상향 — 제주 항공 4인 왕복에 롯데월드·아쿠아리움 4인 입장까지 얹으면 120만으로는 안 된다.
+      days: 3, budget: 1600000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, endBy: 1200, par: 497
     },
     {
       // 2인이라 객실이 1개뿐이라 최고급 호텔이 예산에 들어온다 — 다른 의뢰는 4인이라 2객실이 되어 불가능하다.
@@ -322,7 +375,7 @@ REGIONS.busan = {
       from: '서울', stamina: 95, staminaType: 'night', age: '30대', startDow: 3,
       desc: '서울에서 둘이 갑니다. 결혼 10주년이라 숙소만큼은 최고로 하고 싶어요. 예산은 넉넉합니다.',
       days: 3, budget: 2500000, people: 2, must: ['xthesky'], minSights: 4,
-      minStayTier: 'hotel', endBy: 1260, par: 359
+      minStayTier: 'hotel', endBy: 1260, par: 637
     }
   ]
 };
