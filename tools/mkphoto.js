@@ -50,16 +50,32 @@ async function api(op, qs) {
   return [];
 }
 
-// 이름으로 찾는다. 게임 이름은 "신세계 센텀시티" 처럼 수식이 붙어 있어 그대로는 잘 안 맞는다.
-function keywords(p) {
-  const n = p.name;
-  const out = [n];
-  // 가운뎃점·괄호로 묶인 별칭을 쪼갠다: "용두산공원·부산타워" → 둘 다 시도
-  n.split(/[·()]/).map(s => s.trim()).filter(s => s.length > 1).forEach(s => { if (!out.includes(s)) out.push(s); });
-  // 앞 수식어를 떼어 본다: "신세계 센텀시티" → "센텀시티"
-  const sp = n.split(' ');
-  if (sp.length > 1) out.push(sp.slice(1).join(' '), sp[0]);
-  return [...new Set(out)].filter(s => s.length > 1).slice(0, 4);
+// 이름 정규화 — 공백·가운뎃점·괄호를 털어 비교용 문자열을 만든다
+const norm = t => (t || '').replace(/[\s·()\[\]{},.'"~\-–—]/g, '').toLowerCase();
+// 두 이름이 얼마나 겹치는가(0~1). 문자 2-gram 의 자카드 유사도.
+function sim(a, b) {
+  a = norm(a); b = norm(b);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const gram = t => { const s = new Set(); for (let i = 0; i < t.length - 1; i++) s.add(t.slice(i, i + 2)); return s; };
+  const A = gram(a), B = gram(b);
+  if (!A.size || !B.size) return 0;
+  let hit = 0; A.forEach(g => { if (B.has(g)) hit++; });
+  return hit / (A.size + B.size - hit);
+}
+// 후보 중 가장 잘 맞는 것. 문턱 아래면 null — 엉뚱한 사진이 붙느니 없는 게 낫다.
+const MIN_SIM = .55;
+function bestMatch(name, rows) {
+  let best = null;
+  rows.forEach(r => {
+    if (!r.firstimage) return;
+    const a = norm(name), b = norm(r.title);
+    // 한쪽이 다른 쪽을 통째로 품으면 같은 곳으로 본다(부산 자갈치시장 ⊃ 자갈치시장)
+    const contain = a.length > 3 && b.length > 3 && (a.includes(b) || b.includes(a));
+    const sc = contain ? Math.max(.8, sim(name, r.title)) : sim(name, r.title);
+    if (!best || sc > best.sc) best = { row: r, sc };
+  });
+  return best && best.sc >= MIN_SIM ? best : null;
 }
 
 (async () => {
@@ -72,16 +88,28 @@ function keywords(p) {
   const todo = pois.filter(p => force || !have.has(p.id));
   console.log(`대상 ${todo.length}곳 (이미 있음 ${have.size}곳)`);
 
+  // 부산 전체 목록을 미리 받아 둔다. 키워드 검색만으로는 유명 관광지도 곧잘 놓친다.
+  process.stdout.write('부산 관광정보 목록 받는 중… ');
+  const pool = [];
+  for (let pg = 1; pg <= 12; pg++) {
+    const rows = await api('areaBasedList2', `areaCode=6&numOfRows=100&pageNo=${pg}&arrange=A`);
+    if (!rows.length) break;
+    pool.push(...rows.filter(r => r.firstimage));
+    if (rows.length < 100) break;
+  }
+  console.log(pool.length + '건');
+
   let got = 0, skipCpy = 0, notFound = 0;
   for (const p of todo) {
-    let hit = null;
-    for (const kw of keywords(p)) {
-      // areaCode=6 은 부산. 지역을 묶어야 동명이인을 덜 잡는다.
-      const rows = await api('searchKeyword2', `areaCode=6&numOfRows=5&pageNo=1&keyword=${encodeURIComponent(kw)}`);
-      hit = rows.find(r => r.firstimage);
-      if (hit) break;
+    // ① 지역 목록에서 이름이 가장 잘 맞는 것
+    let best = bestMatch(p.name, pool);
+    // ② 그래도 없으면 키워드 검색으로 한 번 더
+    if (!best) {
+      const rows = await api('searchKeyword2', `areaCode=6&numOfRows=10&pageNo=1&keyword=${encodeURIComponent(p.name)}`);
+      best = bestMatch(p.name, rows);
     }
-    if (!hit) { notFound++; console.log(`  ✘ ${p.name} — 못 찾음`); continue; }
+    if (!best) { notFound++; console.log(`  ✘ ${p.name} — 맞는 항목 없음`); continue; }
+    const hit = best.row;
 
     // 저작권 확인. 상세조회로 cpyrhtDivCd 를 본다.
     const det = await api('detailCommon2', `contentId=${hit.contentid}`);
@@ -91,13 +119,13 @@ function keywords(p) {
       console.log(`  ⊘ ${p.name} — 저작권 ${cpy || '미표기'} 이라 건너뜀`);
       continue;
     }
-    if (dry) { console.log(`  · ${p.name} ← ${hit.title} (${OK_CPY[cpy]})`); got++; continue; }
+    if (dry) { console.log(`  · ${p.name} ← ${hit.title} (${(best.sc * 100).toFixed(0)}% · ${OK_CPY[cpy]})`); got++; continue; }
 
     const img = await fetch(hit.firstimage);
     if (!img.ok) { console.log(`  ✘ ${p.name} — 이미지 내려받기 실패`); notFound++; continue; }
     fs.writeFileSync(path.join(OUT, p.id + '.jpg'), Buffer.from(await img.arrayBuffer()));
     got++;
-    console.log(`  ✔ ${p.name} ← ${hit.title} (${OK_CPY[cpy]})`);
+    console.log(`  ✔ ${p.name} ← ${hit.title} (${(best.sc * 100).toFixed(0)}% · ${OK_CPY[cpy]})`);
     await sleep(120);
   }
   console.log(`\n받음 ${got} · 저작권으로 건너뜀 ${skipCpy} · 못 찾음 ${notFound}`);
