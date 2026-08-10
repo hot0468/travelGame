@@ -1377,10 +1377,13 @@ function layoutPins(list, radiusOf) {
 const V = { k: 0, tx: 0, ty: 0, auto: true };
 const ZMIN = 0.4, ZMAX = 8;
 
+// pointermove 는 초당 수백 번 온다 — 핀을 프레임당 한 번만 다시 그린다.
+// 지형 transform 은 즉시 반영해 손을 따라가고, 핀·글자만 rAF 로 합친다.
+let mapRaf = 0;
 function applyView() {
   $('#mapcanvas').style.transform = `translate(${V.tx}px,${V.ty}px) scale(${V.k})`;
   $('#zoomtxt').textContent = Math.round(V.k * 100) + '%';
-  renderMap();      // 핀·글자는 화면 좌표로 그려두므로 시점이 바뀌면 다시 그린다
+  if (!mapRaf) mapRaf = requestAnimationFrame(() => { mapRaf = 0; renderMap(); });
 }
 function fitView() {
   const { vw, vh } = mapBox(), r = $('#mapwrap').getBoundingClientRect();
@@ -1454,7 +1457,17 @@ function renderMap() {
   const radiusOf = p => order.has(p.id) ? R_ON : R_OFF;
   const shown = R.pois.filter(p => inFilter(p) || order.has(p.id));
   PIN.clear();
-  const laid = layoutPins(shown, radiusOf);
+  // 핀 충돌 완화(13.8ms)는 줌·필터·일정이 같으면 결과가 평행이동뿐이다 —
+  // 팬 중에는 이전 배치를 밀어서 재사용하고, 키가 바뀔 때만 다시 푼다.
+  const mkey = `${V.k}|${S.tab}|${S.sub || ''}|${S.gu || ''}|${lv}|${S.plan.map(e => e.id).join(',')}`;
+  let laid;
+  if (renderMap._c && renderMap._c.key === mkey) {
+    const c = renderMap._c, dx = V.tx - c.tx, dy = V.ty - c.ty;
+    laid = c.laid.map(o => ({ p: o.p, x: o.x + dx, y: o.y + dy }));
+  } else {
+    laid = layoutPins(shown, radiusOf);
+    renderMap._c = { key: mkey, tx: V.tx, ty: V.ty, laid };
+  }
   laid.forEach(o => PIN.set(o.p.id, [o.x, o.y]));
   const at = p => PIN.get(p.id) || px(p);
 
