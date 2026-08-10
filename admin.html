@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>장소 사진 관리 · 여행설계사</title>
+<style>
+  :root{
+    --bg:#fdf8ee; --panel:#fffdf8; --panel2:#f6efe1; --ink:#3b3261; --fg:#2e2a3f;
+    --dim:#8b8299; --line:#e3d9c6; --acc:#e8578e; --ok:#2f9e6e; --bad:#e5484d;
+    --sight:#4b8fe8; --food:#f08a3c; --stay:#9b6fd4;
+    --hard:4px 5px 0 rgba(59,50,97,.18);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:14px/1.6 "Pretendard","Malgun Gothic",system-ui,sans-serif}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+         padding:12px 18px;background:var(--panel);border-bottom:3px solid var(--ink)}
+  h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:12.5px}
+  button{font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;
+         background:var(--panel);color:var(--fg);border:2.5px solid var(--ink);
+         border-radius:11px;padding:6px 13px;box-shadow:2px 3px 0 rgba(59,50,97,.16)}
+  button:hover{transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(59,50,97,.18)}
+  button:active{transform:translate(1px,1px);box-shadow:1px 1px 0 rgba(59,50,97,.16)}
+  button:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+  button.pri{background:var(--acc);color:#fff;border-color:var(--ink)}
+  button.ok{background:var(--ok);color:#fff}
+  .wrap{display:grid;grid-template-columns:300px 1fr;gap:0;height:calc(100vh - 62px)}
+
+  /* ── 왼쪽: 장소 목록 */
+  .side{border-right:3px solid var(--ink);background:var(--panel);
+        display:flex;flex-direction:column;min-height:0}
+  .stat{padding:10px 14px;border-bottom:2px dashed var(--line);font-size:12.5px}
+  .bar{height:9px;background:var(--panel2);border:2px solid var(--ink);border-radius:999px;
+       overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;background:var(--ok);width:0}
+  .filt{display:flex;gap:5px;padding:9px 12px;flex-wrap:wrap;border-bottom:2px dashed var(--line)}
+  .filt button{padding:3px 10px;font-size:12px;border-radius:999px;border-width:2px;box-shadow:none}
+  .filt button.on{background:var(--acc);color:#fff}
+  #q{width:100%;font:inherit;font-size:12.5px;padding:5px 9px;border:2px solid var(--ink);
+     border-radius:9px;background:#fff}
+  .list{overflow:auto;flex:1;min-height:0}
+  .row{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;
+       border-bottom:1px solid var(--line);font-size:12.5px}
+  .row:hover{background:var(--panel2)}
+  .row.on{background:#ffe8f1;font-weight:700}
+  .row .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:var(--line)}
+  .row.has .dot{background:var(--ok)}
+  .row .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .id{color:var(--dim);font-size:11px;font-variant-numeric:tabular-nums}
+  .tag{font-size:10.5px;padding:0 5px;border-radius:5px;color:#fff;font-weight:700}
+  .tag.sight{background:var(--sight)} .tag.food{background:var(--food)} .tag.stay{background:var(--stay)}
+
+  /* ── 오른쪽: 편집 */
+  .main{padding:16px 20px;overflow:auto;min-height:0}
+  .hint{background:var(--panel2);border:2px dashed var(--line);border-radius:12px;
+        padding:11px 14px;font-size:12.5px;color:var(--dim);margin-bottom:14px}
+  .hint b{color:var(--fg)}
+  .drop{border:3px dashed var(--line);border-radius:16px;background:var(--panel);
+        padding:34px;text-align:center;color:var(--dim);font-size:13px}
+  .drop.over{border-color:var(--acc);background:#fff2f7;color:var(--acc)}
+  .editor{display:none;gap:18px;align-items:flex-start;flex-wrap:wrap}
+  .editor.on{display:flex}
+  /* 크롭 무대 — 236:104 비율 틀. 실제 팝업과 같은 비율이라 보이는 대로 저장된다. */
+  .stage{position:relative;width:590px;height:260px;overflow:hidden;background:#222;
+         border:3px solid var(--ink);border-radius:14px;cursor:grab;flex:0 0 auto;
+         box-shadow:var(--hard);touch-action:none}
+  .stage.drag{cursor:grabbing}
+  .stage img{position:absolute;transform-origin:0 0;user-select:none;-webkit-user-drag:none}
+  .stage .guide{position:absolute;inset:0;pointer-events:none;
+        box-shadow:inset 0 0 0 1px rgba(255,255,255,.5)}
+  .stage .guide::before,.stage .guide::after{content:"";position:absolute;background:rgba(255,255,255,.28)}
+  .stage .guide::before{left:33.33%;right:33.33%;top:0;bottom:0;
+        border-left:1px solid rgba(255,255,255,.28);border-right:1px solid rgba(255,255,255,.28);background:none}
+  .stage .guide::after{top:33.33%;bottom:33.33%;left:0;right:0;
+        border-top:1px solid rgba(255,255,255,.28);border-bottom:1px solid rgba(255,255,255,.28);background:none}
+  .ctl{display:flex;flex-direction:column;gap:10px;min-width:210px}
+  .ctl label{font-size:12px;color:var(--dim);font-weight:700}
+  input[type=range]{width:100%;accent-color:var(--acc)}
+  .prev{border:2.5px solid var(--ink);border-radius:12px;overflow:hidden;width:236px;
+        background:var(--panel)}
+  .prev img{display:block;width:236px;height:104px;object-fit:cover;
+            border-bottom:2.5px solid var(--ink)}
+  .prev .nm{padding:6px 10px;font-weight:800;font-size:13px}
+  .msg{margin-top:12px;font-size:12.5px;min-height:20px}
+  .msg.ok{color:var(--ok);font-weight:700}
+  .msg.bad{color:var(--bad);font-weight:700}
+  kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;
+      border-radius:5px;padding:0 5px;font:inherit;font-size:11.5px}
+</style>
+</head>
+<body>
+<header>
+  <h1>장소 사진 관리</h1>
+  <span class="sub">여행설계사 · <code>assets/photos/</code></span>
+  <span style="flex:1"></span>
+  <button id="pick" class="pri">사진 폴더 지정</button>
+  <span id="dir" class="sub"></span>
+</header>
+
+<div class="wrap">
+  <aside class="side">
+    <div class="stat">
+      <div><b id="done">0</b> / <span id="total">0</span> 곳 등록됨</div>
+      <div class="bar"><i id="prog"></i></div>
+    </div>
+    <div class="filt">
+      <button data-f="all" class="on">전체</button>
+      <button data-f="none">사진 없음</button>
+      <button data-f="sight">관광</button>
+      <button data-f="food">식당</button>
+      <button data-f="stay">숙소</button>
+    </div>
+    <div style="padding:9px 12px;border-bottom:2px dashed var(--line)">
+      <input id="q" placeholder="이름·id 로 찾기">
+    </div>
+    <div class="list" id="list"></div>
+  </aside>
+
+  <main class="main">
+    <div class="hint" id="hint">
+      <b>쓰는 법</b> — ① 위 <b>사진 폴더 지정</b> 으로 <code>assets/photos</code> 를 고른다
+      ② 왼쪽에서 장소를 고른다 ③ 사진을 끌어다 놓는다 ④ 드래그로 위치를, 휠·슬라이더로 크기를 맞춘다
+      ⑤ <b>저장</b> 하면 <code>&lt;id&gt;.jpg</code> 로 폴더에 바로 쓴다.
+      <div style="margin-top:6px">
+        <b>폴더 지정이 안 되면</b> — 브라우저가 <code>file://</code> 에서 폴더 쓰기를 막는다.
+        저장소 폴더에서 <kbd>npx serve</kbd> 나 <kbd>python -m http.server</kbd> 를 띄우고
+        <code>localhost</code> 주소로 이 페이지를 열면 된다. 그래도 안 되면 저장 버튼이
+        <b>내려받기</b> 로 바뀌니, 받은 파일을 <code>assets/photos</code> 로 옮기면 똑같다.
+      </div>
+    </div>
+
+    <div id="drop" class="drop">여기로 사진을 끌어다 놓으세요 · 또는 눌러서 고르기
+      <input type="file" id="file" accept="image/*" hidden>
+    </div>
+
+    <div id="editor" class="editor" style="margin-top:14px">
+      <div>
+        <div class="stage" id="stage"><img id="src" alt=""><div class="guide"></div></div>
+        <div class="msg" id="msg"></div>
+      </div>
+      <div class="ctl">
+        <div>
+          <div style="font-weight:800;font-size:15px" id="curName">—</div>
+          <div class="sub" id="curId"></div>
+        </div>
+        <div>
+          <label>크기 <span id="zv" class="sub"></span></label>
+          <input type="range" id="zoom" min="100" max="400" value="100">
+        </div>
+        <div>
+          <label>저장 폭 <span id="wv" class="sub">600px</span></label>
+          <input type="range" id="outw" min="300" max="1000" step="20" value="600">
+        </div>
+        <div class="prev">
+          <img id="prevImg" alt=""><div class="nm" id="prevNm">미리보기</div>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <button id="save" class="pri">저장</button>
+          <button id="fit">가운데 맞춤</button>
+          <button id="del">사진 삭제</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="data/busan.js"></script>
+<script>
+// 장소 사진 관리 어드민.
+// index.html 과 같은 데이터(data/busan.js)를 읽어 POI 목록을 만들고,
+// 팝업과 같은 236:104 비율로 크롭해 <id>.jpg 로 저장한다.
+//
+// 저장은 File System Access API(showDirectoryPicker)로 폴더에 직접 쓴다. 그런데 이 API 는
+// file:// 에서 차단된다 — 그때는 저장 버튼이 내려받기로 바뀐다(결과물은 같다).
+const $ = s => document.querySelector(s);
+const POIS = REGIONS.busan.pois;
+const RATIO = 236 / 104;              // 팝업 사진 자리 비율. 여기 맞춰 크롭한다.
+const TYPE_NM = { sight: '관광', food: '식당', stay: '숙소' };
+
+let dirHandle = null;                 // 사진 폴더
+let has = new Set();                  // 사진이 이미 있는 id
+let cur = null;                       // 고른 장소
+let img = null;                       // 올린 원본 (Image)
+let view = { x: 0, y: 0, z: 1 };      // 무대 안에서의 위치·배율
+let filt = 'all', query = '';
+
+const stage = $('#stage'), srcImg = $('#src');
+const SW = 590, SH = Math.round(SW / RATIO);   // 무대 크기(=590x260)
+
+// ── 목록 ---------------------------------------------------
+function matches(p) {
+  if (filt === 'none' && has.has(p.id)) return false;
+  if (['sight', 'food', 'stay'].includes(filt) && p.type !== filt) return false;
+  if (query && !(p.name + ' ' + p.id).toLowerCase().includes(query)) return false;
+  return true;
+}
+function renderList() {
+  const rows = POIS.filter(matches);
+  $('#list').innerHTML = rows.map(p => `
+    <div class="row ${has.has(p.id) ? 'has' : ''} ${cur && cur.id === p.id ? 'on' : ''}" data-id="${p.id}">
+      <span class="dot"></span>
+      <span class="t">${p.name}</span>
+      <span class="tag ${p.type}">${TYPE_NM[p.type]}</span>
+      <span class="id">${p.id}</span>
+    </div>`).join('') || '<div style="padding:14px;color:var(--dim)">해당하는 장소가 없습니다</div>';
+  $('#done').textContent = has.size;
+  $('#total').textContent = POIS.length;
+  $('#prog').style.width = (has.size / POIS.length * 100).toFixed(1) + '%';
+}
+$('#list').onclick = e => {
+  const r = e.target.closest('.row'); if (!r) return;
+  cur = POIS.find(p => p.id === r.dataset.id);
+  $('#curName').textContent = cur.name;
+  $('#curId').textContent = cur.id + '.jpg';
+  $('#prevNm').textContent = cur.name;
+  say('');
+  renderList();
+  // 이미 있는 사진을 불러와 다시 손볼 수 있게 한다
+  loadExisting(cur.id);
+};
+$('.filt').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  filt = b.dataset.f;
+  [...document.querySelectorAll('.filt button')].forEach(x => x.classList.toggle('on', x === b));
+  renderList();
+};
+$('#q').oninput = e => { query = e.target.value.trim().toLowerCase(); renderList(); };
+
+// ── 폴더 지정 -----------------------------------------------
+const canPickDir = typeof window.showDirectoryPicker === 'function';
+if (!canPickDir) {
+  $('#pick').textContent = '폴더 지정 불가 — 내려받기로 저장';
+  $('#pick').disabled = true;
+  $('#save').textContent = '내려받기';
+}
+$('#pick').onclick = async () => {
+  try {
+    dirHandle = await showDirectoryPicker({ mode: 'readwrite' });
+    $('#dir').textContent = '폴더: ' + dirHandle.name;
+    await scanDir();
+    say('폴더를 읽었습니다 · 등록된 사진 ' + has.size + '장', 'ok');
+  } catch (e) { if (e.name !== 'AbortError') say('폴더를 열지 못했습니다: ' + e.message, 'bad'); }
+};
+// 폴더 안의 <id>.jpg 를 훑어 진행현황을 만든다
+async function scanDir() {
+  has = new Set();
+  if (!dirHandle) return;
+  for await (const [name, h] of dirHandle.entries()) {
+    if (h.kind !== 'file') continue;
+    const m = name.match(/^(.+)\.jpg$/i);
+    if (m && POIS.some(p => p.id === m[1])) has.add(m[1]);
+  }
+  renderList();
+}
+// 폴더가 없으면 <img> 로 존재를 떠본다(로딩되면 있는 것)
+function probeAll() {
+  let left = POIS.length;
+  POIS.forEach(p => {
+    const t = new Image();
+    t.onload = () => { has.add(p.id); if (!--left) renderList(); };
+    t.onerror = () => { if (!--left) renderList(); };
+    t.src = 'assets/photos/' + encodeURIComponent(p.id) + '.jpg?probe=' + Date.now();
+  });
+}
+async function loadExisting(id) {
+  const url = 'assets/photos/' + encodeURIComponent(id) + '.jpg?t=' + Date.now();
+  const t = new Image();
+  t.onload = () => { setImage(t); say('등록된 사진을 불러왔습니다 · 다시 손보고 저장할 수 있습니다'); };
+  t.onerror = () => { img = null; $('#editor').classList.remove('on'); };
+  t.src = url;
+}
+
+// ── 사진 올리기 ---------------------------------------------
+const drop = $('#drop');
+drop.onclick = () => $('#file').click();
+$('#file').onchange = e => { if (e.target.files[0]) readFile(e.target.files[0]); };
+['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => {
+  e.preventDefault(); drop.classList.add('over');
+}));
+['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => {
+  e.preventDefault(); drop.classList.remove('over');
+}));
+drop.addEventListener('drop', e => {
+  const f = [...(e.dataTransfer.files || [])].find(x => x.type.startsWith('image/'));
+  if (f) readFile(f);
+});
+// 페이지 어디에 놓아도 받는다
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  const f = [...(e.dataTransfer.files || [])].find(x => x.type.startsWith('image/'));
+  if (f) readFile(f);
+});
+function readFile(f) {
+  if (!cur) { say('왼쪽에서 장소를 먼저 고르세요', 'bad'); return; }
+  const r = new FileReader();
+  r.onload = () => { const t = new Image(); t.onload = () => setImage(t); t.src = r.result; };
+  r.readAsDataURL(f);
+}
+function setImage(t) {
+  img = t;
+  srcImg.src = t.src;
+  $('#editor').classList.add('on');
+  fitCenter();
+}
+// 무대를 꽉 채우는 최소 배율로 맞추고 가운데로
+function fitCenter() {
+  if (!img) return;
+  const base = Math.max(SW / img.naturalWidth, SH / img.naturalHeight);
+  view.z = 1;
+  view.baseZ = base;
+  const w = img.naturalWidth * base, h = img.naturalHeight * base;
+  view.x = (SW - w) / 2; view.y = (SH - h) / 2;
+  $('#zoom').value = 100;
+  apply();
+}
+$('#fit').onclick = fitCenter;
+
+function apply() {
+  if (!img) return;
+  const z = view.baseZ * view.z;
+  srcImg.style.width = img.naturalWidth * z + 'px';
+  srcImg.style.height = img.naturalHeight * z + 'px';
+  srcImg.style.left = view.x + 'px';
+  srcImg.style.top = view.y + 'px';
+  $('#zv').textContent = Math.round(view.z * 100) + '%';
+  drawPreview();
+}
+// 빈 곳이 보이지 않게 이동 범위를 가둔다
+function clamp() {
+  const z = view.baseZ * view.z;
+  const w = img.naturalWidth * z, h = img.naturalHeight * z;
+  view.x = Math.min(0, Math.max(SW - w, view.x));
+  view.y = Math.min(0, Math.max(SH - h, view.y));
+}
+// 드래그
+let drag = null;
+stage.addEventListener('pointerdown', e => {
+  if (!img) return;
+  drag = { sx: e.clientX, sy: e.clientY, ox: view.x, oy: view.y };
+  stage.setPointerCapture(e.pointerId); stage.classList.add('drag');
+});
+stage.addEventListener('pointermove', e => {
+  if (!drag) return;
+  view.x = drag.ox + (e.clientX - drag.sx);
+  view.y = drag.oy + (e.clientY - drag.sy);
+  clamp(); apply();
+});
+['pointerup', 'pointercancel'].forEach(t => stage.addEventListener(t, () => {
+  drag = null; stage.classList.remove('drag');
+}));
+// 휠 확대 — 커서 위치를 기준으로 잡아야 손맛이 맞는다
+stage.addEventListener('wheel', e => {
+  if (!img) return;
+  e.preventDefault();
+  const r = stage.getBoundingClientRect();
+  const cx = e.clientX - r.left, cy = e.clientY - r.top;
+  const before = view.baseZ * view.z;
+  const nz = Math.min(4, Math.max(1, view.z * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
+  const after = view.baseZ * nz;
+  view.x = cx - (cx - view.x) * (after / before);
+  view.y = cy - (cy - view.y) * (after / before);
+  view.z = nz;
+  $('#zoom').value = Math.round(nz * 100);
+  clamp(); apply();
+}, { passive: false });
+$('#zoom').oninput = e => {
+  if (!img) return;
+  const nz = +e.target.value / 100;
+  const before = view.baseZ * view.z, after = view.baseZ * nz;
+  view.x = SW / 2 - (SW / 2 - view.x) * (after / before);
+  view.y = SH / 2 - (SH / 2 - view.y) * (after / before);
+  view.z = nz; clamp(); apply();
+};
+$('#outw').oninput = e => { $('#wv').textContent = e.target.value + 'px'; drawPreview(); };
+
+// ── 크롭 결과 만들기 ------------------------------------------
+function renderCanvas() {
+  const OW = +$('#outw').value, OH = Math.round(OW / RATIO);
+  const c = document.createElement('canvas');
+  c.width = OW; c.height = OH;
+  const g = c.getContext('2d');
+  g.imageSmoothingQuality = 'high';
+  g.fillStyle = '#fff'; g.fillRect(0, 0, OW, OH);
+  // 무대에서 보이는 그대로를 출력 크기로 옮긴다
+  const k = OW / SW, z = view.baseZ * view.z;
+  g.drawImage(img, view.x * k, view.y * k, img.naturalWidth * z * k, img.naturalHeight * z * k);
+  return c;
+}
+function drawPreview() {
+  if (!img) return;
+  $('#prevImg').src = renderCanvas().toDataURL('image/jpeg', .85);
+}
+
+// ── 저장 ----------------------------------------------------
+function say(t, k) { const m = $('#msg'); m.textContent = t; m.className = 'msg' + (k ? ' ' + k : ''); }
+$('#save').onclick = async () => {
+  if (!cur || !img) { say('장소와 사진을 먼저 고르세요', 'bad'); return; }
+  const blob = await new Promise(r => renderCanvas().toBlob(r, 'image/jpeg', .85));
+  const name = cur.id + '.jpg';
+  if (dirHandle) {
+    try {
+      const fh = await dirHandle.getFileHandle(name, { create: true });
+      const w = await fh.createWritable();
+      await w.write(blob); await w.close();
+      has.add(cur.id); renderList();
+      say(`저장했습니다 — ${name} (${(blob.size / 1024).toFixed(0)}KB)`, 'ok');
+      return;
+    } catch (e) { say('폴더에 쓰지 못했습니다: ' + e.message + ' — 내려받기로 대신합니다', 'bad'); }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  has.add(cur.id); renderList();
+  say(`내려받았습니다 — ${name} · assets/photos 로 옮기세요`, 'ok');
+};
+$('#del').onclick = async () => {
+  if (!cur) return;
+  if (!dirHandle) { say('폴더를 지정해야 삭제할 수 있습니다 (파일을 직접 지우세요)', 'bad'); return; }
+  try {
+    await dirHandle.removeEntry(cur.id + '.jpg');
+    has.delete(cur.id); renderList();
+    img = null; $('#editor').classList.remove('on');
+    say('지웠습니다 — ' + cur.id + '.jpg', 'ok');
+  } catch (e) { say('지우지 못했습니다: ' + e.message, 'bad'); }
+};
+
+renderList();
+probeAll();          // 폴더 지정 전에도 현황을 대충 보여준다
+</script>
+</body>
+</html>
