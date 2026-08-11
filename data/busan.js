@@ -294,6 +294,12 @@ REGIONS.busan = {
     { a: 'gukje', b: 'hotteok', joy: 7, say: '국제시장 돌고 씨앗호떡, 이건 못 참죠' },
     { a: 'biff', b: 'yasijang', joy: 7, say: 'BIFF광장에서 야시장까지 밤이 길겠어요' },
     { a: 'yongdusan', b: 'history', joy: 6, say: '용두산 내려와서 역사관까지, 차분하고 좋아요' },
+    // 남포동 미식투어 — 셋 중 어느 순서로 이어도 성립하도록 삼각형으로 넣는다.
+    // 셋을 다 붙이면 +14 라 단일 조합(최대 9)보다 크지만, 식사 세 끼로 190분과 1인 67,000원을
+    // 쓰는 데다 관광지 수는 따로 채워야 해서 공짜가 아니다.
+    { a: 'ijaemo', b: 'dwaeji', joy: 7, say: '이재모 피자에 돼지국밥까지, 남포동 미식투어네요!' },
+    { a: 'dwaeji', b: 'hoe', joy: 7, say: '국밥에 회까지, 자갈치를 제대로 먹고 가시네요!' },
+    { a: 'ijaemo', b: 'hoe', joy: 7, say: '회 먹고 피자라니, 배가 남아날까요?' },
     // 영도 — 흰여울과 태종대
     { a: 'huinyeoul', b: 'huincafe', joy: 8, say: '흰여울 걷고 바다 보며 커피, 딱 좋아요' },
     { a: 'taejongdae', b: 'eomuk', joy: 7, say: '태종대 보고 어묵 사가는 게 영도 정석이죠' },
@@ -344,7 +350,7 @@ REGIONS.busan = {
       from: '대구', stamina: 100, staminaType: 'morning', age: '30대', startDow: 5,
       desc: '대구에서 갑니다. 부산에선 대중교통만 탈게요. 감천이랑 자갈치는 꼭이요!',
       days: 2, budget: 240000, people: 2, must: ['gamcheon', 'jagalchi'], minSights: 4,
-      banModes: ['taxi', 'car'], endBy: 1200, par: 441
+      banModes: ['taxi', 'car'], endBy: 1200, par: 391
     },
     {
       id: 'q3', lv: 2, title: '당일치기 출장 뒤풀이',
@@ -367,7 +373,7 @@ REGIONS.busan = {
       from: '제주', stamina: 90, staminaType: 'morning', age: '아이 동반', startDow: 4,
       desc: '제주에서 아이 둘 데리고 갑니다. 롯데월드는 필수! 이동은 편했으면 해요.',
       // 같은 이유로 상향 — 제주 항공 4인 왕복에 롯데월드·아쿠아리움 4인 입장까지 얹으면 120만으로는 안 된다.
-      days: 3, budget: 1600000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, endBy: 1200, par: 497
+      days: 3, budget: 1600000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, endBy: 1200, par: 452
     },
     {
       // 2인이라 객실이 1개뿐이라 최고급 호텔이 예산에 들어온다 — 다른 의뢰는 4인이라 2객실이 되어 불가능하다.
