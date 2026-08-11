@@ -17,9 +17,12 @@ const REGION = process.argv.slice(2).find(a => !a.startsWith('-')) || 'busan';
   const f = path.join(dir, 'data/' + r + '.js');
   if (!fs.existsSync(f)) { console.error('data/' + r + '.js 가 없다'); process.exit(1); }
   eval(fs.readFileSync(f, 'utf8'));
-  // 지하철·경로표 같은 딸린 파일도 함께 읽는다(data/<지역>-*.js)
-  fs.readdirSync(path.join(dir, 'data')).filter(x => x.startsWith(r + '-')).forEach(x =>
-    eval(fs.readFileSync(path.join(dir, 'data', x), 'utf8')));
+  // 지하철·경로표 같은 딸린 파일도 함께 읽는다(data/<지역>-*.js).
+  // -subway 를 맨 앞으로 — 니시테츠·JR 은 subway 구조에 노선을 더하는 파일이라 그 뒤여야 한다.
+  // 알파벳순(jr < nishitetsu < subway)으로 읽으면 조용히 빠져서 전부 직선 근사로 돌게 된다.
+  fs.readdirSync(path.join(dir, 'data')).filter(x => x.startsWith(r + '-'))
+    .sort((a, b) => (a.includes('-subway') ? 0 : 1) - (b.includes('-subway') ? 0 : 1))
+    .forEach(x => eval(fs.readFileSync(path.join(dir, 'data', x), 'utf8')));
 });
 if (!REGIONS[REGION]) { console.error(REGION + ' 지역을 못 찾았다'); process.exit(1); }
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
@@ -81,7 +84,11 @@ for (const q of R.quests) {
   const PJ = R.pairs || [];
   let best = null; const why = {}; let minSpend = Infinity;
   for (let it = 0; it < ITER; it++) {
-    const pick = [...q.must.map(id => poi(id))];
+    // 숙소형 must(온천 료칸 등)는 낮 일정이 아니라 밤 슬롯에 앉혀야 한다 —
+    // 관광 목록에 섞으면 숙소=취침이라 하루가 그 자리에서 쪼개져 전 반복이 위반으로 죽는다.
+    const mustAll = q.must.map(id => poi(id));
+    const mustStay = mustAll.filter(p => p.type === 'stay');
+    const pick = mustAll.filter(p => p.type !== 'stay');
     const nS = q.minSights - pick.filter(p => p.type === 'sight').length;
     const pS = [...sights].sort(() => Math.random() - .5).slice(0, Math.max(0, nS + (Math.random() < .3 ? 1 : 0)));
     const pF = [...foods].sort(() => Math.random() - .5).slice(0, q.days + (Math.random() < .5 ? 0 : 1));
@@ -106,7 +113,8 @@ for (const q of R.quests) {
     }
     // 숙소를 하루 끝마다 끼워넣기
     // 연박 허용: 매일 독립적으로 뽑음
-    const stays = Array.from({ length: q.days - 1 }, () => stayPool[Math.random() * stayPool.length | 0]);
+    const stays = Array.from({ length: q.days - 1 },
+      (_, d) => mustStay[d] || stayPool[Math.random() * stayPool.length | 0]);
     const per = Math.ceil(all.length / q.days);
     const plan = [];
     for (let d = 0; d < q.days; d++) {

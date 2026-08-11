@@ -652,7 +652,7 @@
 <!-- 의뢰를 고르면 이어서 뜨는 도착 교통편 선택 -->
 <dialog id="trip" class="wide">
   <h3 id="triphd"></h3>
-  <p class="s" style="margin:0 0 14px">부산까지 오는 비용도 손님 예산에서 나갑니다. 싼 편은 늦게 도착해 첫날이 짧아집니다.</p>
+  <p class="s" style="margin:0 0 14px" id="tripsub"></p>
   <div id="tripopts"></div>
 </dialog>
 
@@ -686,6 +686,7 @@
 <script src="data/fukuoka.js"></script>
 <script src="data/fukuoka-subway.js"></script>
 <script src="data/fukuoka-nishitetsu.js"></script>
+<script src="data/fukuoka-jr.js"></script>
 <script src="data/subway.js"></script>
 <script src="data/transit.js"></script>
 <script src="data/photos.js"></script>
@@ -922,6 +923,18 @@ function subwayPath(a, b, region) {
            min: Math.round((rideSec + transfers * TRANSFER_SEC) / 60),
            rideKm: +real.reduce((s, l) => s + l.km, 0).toFixed(1),
            fromSt: A.st, toSt: B.st, walkFrom: A.km, walkTo: B.km };
+}
+// 같은 쌍은 결과가 불변이라(좌표·노선표 고정) 한 번만 푼다. 경로표 없는 지역(후쿠오카)은
+// travel() 이 부를 때마다 다익스트라를 새로 돌아 렌더·밸런스가 그만큼 느려진다 —
+// 밸런스는 이 메모 없이 11분 넘게 걸렸다. 임의 좌표(id 없음)는 좌표를 키로 쓴다.
+{
+  const raw = subwayPath, memo = new Map();
+  const keyOf = p => p ? (p.id || p.lat + ',' + p.lng) : '';
+  subwayPath = (a, b, region) => {
+    const k = (region || S.region) + '|' + keyOf(a) + '|' + keyOf(b);
+    if (!memo.has(k)) memo.set(k, raw(a, b, region));
+    return memo.get(k);
+  };
 }
 // "1호선 부산역→서면역 · 2호선 서면역→해운대역" 형태의 한 줄 요약
 const subwayText = p => !p ? ''
@@ -1727,7 +1740,7 @@ function letterBody(q) {
     </div>
     <ul class="need">
       ${li('calendar-days', `<b>${q.days}일</b> 일정 · ${dowName(R, q.startDow)}요일 출발 · ${ic('users')} ${q.people}인`)}
-      ${li('wallet', `예산 <b>${won(q.budget)}</b> — 부산까지 오는 교통비도 여기서 나갑니다`)}
+      ${li('wallet', `예산 <b>${won(q.budget)}</b> — ${esc(R.name)}까지 오는 교통비도 여기서 나갑니다`)}
       ${li('star', `<span class="must">꼭 가야 할 곳: <b>${q.must.map(id => esc(poi(id).name)).join(', ')}</b></span>`)}
       ${li('target', `관광지 <b>${q.minSights}곳</b> 이상`)}
       ${q.days > 1 ? li('bed-double', `숙소 <b>${q.days - 1}곳</b>${q.minStayTier ? ` · ${TIER_NAME[q.minStayTier]} 이상` : ''}`) : ''}
@@ -1748,7 +1761,8 @@ function openTrip() {
   const q = S.quest; if (!q) return;
   const opts = REGIONS[S.region].origins[q.from] || [];
   const starts = REGIONS[S.region].starts;
-  $('#triphd').innerHTML = `${ic('map-pin')} ${esc(q.from)}에서 부산까지, 무엇을 타고 올까요?`;
+  $('#triphd').innerHTML = `${ic('map-pin')} ${esc(q.from)}에서 ${esc(REGIONS[S.region].name)}까지, 무엇을 타고 올까요?`;
+  $('#tripsub').textContent = `${REGIONS[S.region].name}까지 오는 비용도 손님 예산에서 나갑니다. 싼 편은 늦게 도착해 첫날이 짧아집니다.`;
   $('#tripopts').innerHTML = opts.map(o => {
     const to = starts.find(x => x.id === o.to);
     const total = o.cost * (o.per === 'car' ? Math.ceil(q.people / 4) : q.people);
@@ -1971,7 +1985,7 @@ function renderPlan(res) {
   const st = res.dayStat[S.day];
   const T = REGIONS[S.region].staminaTypes[res.type];
   $('#stambar').innerHTML = st ? `<div class="wakerow" style="margin-top:0">${S.day === 0
-      ? `<span class="s">${ic(arr ? arr.ico : 'map-pin')} ${hhmm(wakeOf(0))} 부산 도착</span>
+      ? `<span class="s">${ic(arr ? arr.ico : 'map-pin')} ${hhmm(wakeOf(0))} ${esc(REGIONS[S.region].name)} 도착</span>
          <button class="mini" data-act="trip">교통편 변경</button>`
       : `<span class="s">${ic('sunrise')} 체크아웃</span>
          <select data-wake="${S.day}">${[...Array(15)].map((_, i) => {

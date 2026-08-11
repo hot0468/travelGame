@@ -11,13 +11,15 @@
 // 손으로 고르지 않는다. data/fukuoka.js 의 bounds 안에 걸치는 것만 자동으로 골라 담는다.
 const fs = require('fs'), path = require('path'), os = require('os');
 const dir = path.join(__dirname, '..');
-const BASE = 'https://raw.githubusercontent.com/niiyz/JapanCityGeoJson/master/geojson/40/';
+// 40=후쿠오카현, 44=오이타현(유후인). bounds 에 걸치는 시정촌만 담기므로 현을 더 받아도 안전하다.
+const PREFS = ['40', '44'];
+const BASE = 'https://raw.githubusercontent.com/niiyz/JapanCityGeoJson/master/geojson/';
 const TREE = 'https://api.github.com/repos/niiyz/JapanCityGeoJson/git/trees/master?recursive=1';
 const CACHE = path.join(os.tmpdir(), 'fukuoka-map');
 const fresh = process.argv.includes('--fresh');
 const UA = { 'User-Agent': 'travelGame/1.0 (https://github.com/hot0468/travelGame)' };
 
-const VW = 700, VH = 800;            // 약도와 같은 캔버스 — mapImage 를 붙여도 투영이 안 바뀐다
+const VW = 1080, VH = 520;            // 약도와 같은 캔버스 — mapImage 를 붙여도 투영이 안 바뀐다
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function getJSON(url, tag) {
@@ -43,9 +45,11 @@ async function getJSON(url, tag) {
   // 후쿠오카현의 시구정촌 코드 목록
   const tree = await getJSON(TREE, 'tree');
   if (!tree || !tree.tree) { console.error('저장소 목록을 못 받았다'); process.exit(1); }
-  const codes = tree.tree.filter(t => /^geojson\/40\/\d+\.json$/.test(t.path))
-    .map(t => t.path.match(/(\d+)\.json/)[1]).sort();
-  console.log(`후쿠오카현 시구정촌 ${codes.length}개 — bounds 안에 걸치는 것만 고른다`);
+  const re = new RegExp(`^geojson\\/(${PREFS.join('|')})\\/\\d+\\.json$`);
+  const codes = tree.tree.filter(t => re.test(t.path))
+    .map(t => { const m = t.path.match(/geojson\/(\d+)\/(\d+)\.json/); return { pref: m[1], c: m[2] }; })
+    .sort((a, b) => a.c.localeCompare(b.c));
+  console.log(`후쿠오카·오이타현 시구정촌 ${codes.length}개 — bounds 안에 걸치는 것만 고른다`);
 
   // 위경도 → 캔버스 픽셀. index.html 의 px() 와 같은 선형 투영이라야 장소가 제자리에 온다.
   const PX = ([lng, lat]) => [
@@ -74,8 +78,8 @@ async function getJSON(url, tag) {
   }
 
   const rows = [];
-  for (const c of codes) {
-    const g = await getJSON(BASE + c + '.json', c);
+  for (const { pref, c } of codes) {
+    const g = await getJSON(BASE + pref + '/' + c + '.json', c);
     if (!g || !g.features) continue;
     const f = g.features[0];
     const nm = ((f.properties.N03_004 || f.properties.N03_003 || '') + '').trim();

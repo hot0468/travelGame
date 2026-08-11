@@ -16,11 +16,11 @@ REGIONS.fukuoka = {
   // 지도. tools/mkmap-fukuoka.js 가 국토수치정보(행정구역)로 그린다.
   // bounds 는 mapImage 가 있든 없든 반드시 있어야 한다 — px() 가 위경도를 화면
   // 좌표로 옮길 때 쓰는 범위다. SVG 도 같은 bounds·캔버스로 그려야 핀이 제자리에 온다.
-  bounds: { w: 130.27, e: 130.58, n: 33.72, s: 33.47 },
+  bounds: { w: 130.27, e: 131.56, n: 33.72, s: 33.20 },  // 유후인·벳푸(오이타현)까지 동쪽으로 넓혔다
   mapImage: {
     src: 'assets/fukuoka-map.svg',
-    vw: 700, vh: 800,
-    bounds: { w: 130.27, e: 130.58, n: 33.72, s: 33.47 },
+    vw: 1080, vh: 520,   // 위도 보정한 실거리 비(≈1.89)에 맞춘 캔버스
+    bounds: { w: 130.27, e: 131.56, n: 33.72, s: 33.20 },  // 유후인·벳푸(오이타현)까지 동쪽으로 넓혔다
     // 국토수치정보는 정부표준이용약관 2.0 — 상업 이용·가공 자유, CC BY 4.0 호환.
     // 출처 표시는 의무라 앱 하단에 남긴다. SA 전염은 없다.
     credit: '국토교통성', license: '국토수치정보(행정구역)',
@@ -69,9 +69,11 @@ REGIONS.fukuoka = {
         arrive: 840, min: 95, drain: .12 },
     ],
     '부산': [
-      // 부산~하카타 고속선. 배편이라 값은 싸지만 체력을 많이 깎는다.
-      { id: 'ferry', name: '고속선', ico: 'ship', to: 'hakataport', cost: 120000, per: 'person',
-        arrive: 700, min: 210, drain: .18 },
+      // 부산~하카타 크루즈선(카멜리아라인). 고속선(비틀·코비)은 운항 종료로 뺐다.
+      // 밤배로 가서 아침에 내리므로 도착이 항공보다 이르고, 자면서 가니 덜 지친다.
+      // min 은 귀가에 쓰는 낮배 기준(12:30→18:00). 갈 때 시간은 arrive 가 대신 말해 준다.
+      { id: 'ferry', name: '크루즈선', ico: 'ship', to: 'hakataport', cost: 110000, per: 'person',
+        arrive: 450, min: 330, drain: .12 },
       { id: 'air', name: '항공', ico: 'plane', to: 'fukair', cost: 150000, per: 'person',
         arrive: 615, min: 55, drain: .09 },
     ],
@@ -79,7 +81,7 @@ REGIONS.fukuoka = {
   // 도착 지점
   starts: [
     { id: 'fukair', name: '후쿠오카공항', lat: 33.5859, lng: 130.4506, note: '항공' },
-    { id: 'hakataport', name: '하카타항 국제터미널', lat: 33.6104, lng: 130.3947, note: '고속선' },
+    { id: 'hakataport', name: '하카타항 국제터미널', lat: 33.6104, lng: 130.3947, note: '크루즈선' },
     { id: 'hakatastn', name: '하카타역', lat: 33.5898, lng: 130.4207, note: '신칸센·JR' },
   ],
 
@@ -132,6 +134,42 @@ REGIONS.fukuoka = {
       lat: 33.5889, lng: 130.4219, cost: 135000, stay: 0, joy: 8, open: [900, 1440] },
     { id: 'hotel_grand', gu: '주오구', name: '그랜드 하얏트 후쿠오카', type: 'stay', tier: 'hotel',
       lat: 33.5901, lng: 130.4118, cost: 234000, stay: 0, joy: 9, open: [900, 1440] },
+
+    // ── 유후인(오이타현) — JR 유후인노모리로 2시간 10분. data/fukuoka-jr.js 가 노선을 댄다.
+    { id: 'kinrinko', gu: '유후시', name: '긴린코 호수', type: 'sight', sub: 'nature',
+      lat: 33.2646, lng: 131.3693, cost: 0, stay: 60, joy: 8, open: [0, 1440] },
+    { id: 'yunotsubo', gu: '유후시', name: '유노쓰보 거리', type: 'sight', sub: 'shopping',
+      lat: 33.2661, lng: 131.3625, cost: 0, stay: 80, joy: 7, open: [540, 1080] },
+    { id: 'floral', gu: '유후시', name: '유후인 플로럴빌리지', type: 'sight', sub: 'photo',
+      lat: 33.2668, lng: 131.3648, cost: 0, stay: 40, joy: 5, open: [540, 1050] },
+    { id: 'yumabushi', gu: '유후시', name: '유후마부시 신 (소고기 덮밥)', type: 'food', sub: 'meal',
+      lat: 33.2648, lng: 131.3690, cost: 22500, stay: 60, joy: 8, open: [630, 1140] },
+    { id: 'bspeak', gu: '유후시', name: 'B-speak 롤케이크', type: 'food', sub: 'cafe',
+      lat: 33.2645, lng: 131.3565, cost: 6300, stay: 30, joy: 6, open: [600, 1020] },
+    // 온천 료칸 — 가이세키 저녁 포함이라 방값이 세다. 부모님 의뢰(f4)의 필수 코스.
+    { id: 'yu_ryokan', gu: '유후시', name: '유후인 온천 료칸', type: 'stay', tier: 'hotel',
+      lat: 33.2620, lng: 131.3660, cost: 450000, stay: 0, joy: 9, open: [900, 1440] },
+
+    // ── 벳푸(오이타현) — JR 소닉으로 2시간, 유후인에서는 특급 유후로 1시간.
+    { id: 'umijigoku', gu: '벳푸시', name: '벳푸 지옥순례 (바다지옥)', type: 'sight', sub: 'nature',
+      lat: 33.3146, lng: 131.4784, cost: 21600, stay: 100, joy: 8, open: [480, 1020] },
+    { id: 'yukemuri', gu: '벳푸시', name: '유케무리 전망대', type: 'sight', sub: 'photo',
+      lat: 33.3005, lng: 131.4661, cost: 0, stay: 30, joy: 5, open: [0, 1440] },
+    { id: 'takegawara', gu: '벳푸시', name: '타케가와라 온천 (모래찜질)', type: 'sight', sub: 'culture',
+      lat: 33.2761, lng: 131.5045, cost: 13500, stay: 70, joy: 7, open: [390, 1350] },
+    { id: 'toyotsune', gu: '벳푸시', name: '토요츠네 (튀김덮밥)', type: 'food', sub: 'meal',
+      lat: 33.2795, lng: 131.5023, cost: 9900, stay: 50, joy: 7, open: [660, 1290] },
+    { id: 'beppu_hotel', gu: '벳푸시', name: '벳푸 온천 호텔', type: 'stay', tier: 'hotel',
+      lat: 33.2775, lng: 131.4980, cost: 360000, stay: 0, joy: 8, open: [900, 1440] },
+  ],
+
+  // 이어서 돌면 손님이 특히 좋아하는 조합 (busan 의 pairs 와 같은 구조)
+  pairs: [
+    { a: 'yunotsubo', b: 'kinrinko', joy: 8, say: '유노쓰보 거리 끝이 바로 긴린코라니, 걷는 맛이 나요' },
+    { a: 'kinrinko', b: 'yumabushi', joy: 7, say: '호수 보고 바로 마부시 덮밥, 유후인 정석이네요' },
+    { a: 'starbucks_dazaifu', b: 'dazaifu', joy: 6, say: '참배길 카페에서 쉬었다 텐만구까지, 좋은 코스예요' },
+    { a: 'umijigoku', b: 'takegawara', joy: 7, say: '지옥 구경하고 모래찜질까지, 벳푸를 제대로 즐기네요' },
+    { a: 'takegawara', b: 'toyotsune', joy: 6, say: '온천 하고 나와서 튀김덮밥, 이 동네 코스 그대로예요' },
   ],
 
   // ── 의뢰 3건. par 는 tools/balance.js 로 잡은 값이다(상한의 62%).
@@ -139,7 +177,8 @@ REGIONS.fukuoka = {
     { id: 'f1', lv: 1, title: '주말 후쿠오카 · 라멘이 먹고 싶어요', from: '부산',
       desc: '부산에서 배 타고 갑니다. 라멘만 먹어도 좋아요.',
       days: 2, budget: 700000, people: 2, stamina: 110, staminaType: 'energizer',
-      age: '20대', startDow: 4, must: ['ichiran'], minSights: 2, endBy: 1260, par: 130 },
+      // 고속선 폐지로 크루즈선 왕복(밤배+낮배 5.5h)이 이동시간을 크게 먹는다 — par 도 같이 내렸다
+      age: '20대', startDow: 4, must: ['ichiran'], minSights: 2, endBy: 1260, par: 41 },
     { id: 'f2', lv: 2, title: '부모님과 다자이후', from: '서울',
       desc: '부모님 모시고 갑니다. 너무 많이 걷지 않았으면 해요.',
       days: 2, budget: 1200000, people: 3, stamina: 90, staminaType: 'morning',
@@ -147,6 +186,12 @@ REGIONS.fukuoka = {
     { id: 'f3', lv: 3, title: '아이랑 셋이서', from: '서울',
       desc: '아이가 동물을 좋아해요. 뛰어놀 데가 있으면 좋겠습니다.',
       days: 3, budget: 1800000, people: 4, stamina: 100, staminaType: 'motionsick',
-      age: '아이 동반', startDow: 5, must: ['zoo'], minSights: 4, endBy: 1230, par: 296 },
+      age: '아이 동반', startDow: 5, must: ['zoo'], minSights: 4, endBy: 1230, par: 208 },
+    { id: 'f4', lv: 3, title: '부모님과 유후인 온천', from: '서울',
+      desc: '부모님 모시고 갑니다. 유후인 온천 료칸에서 하루 묵고 싶어요. 무리한 일정은 안 돼요.',
+      // 2박 3일 — 유후인 왕복이 5시간이라 1박으로는 점수가 음수까지 눌린다(상한 -124 실측).
+      days: 3, budget: 2600000, people: 3, stamina: 85, staminaType: 'morning',
+      age: '60대 이상', startDow: 1, must: ['kinrinko', 'yu_ryokan'], minSights: 4,
+      minStayTier: 'hotel', endBy: 1230, par: 295 },
   ],
 };
