@@ -13,13 +13,25 @@ window.REGIONS = window.REGIONS || {};
 REGIONS.fukuoka = {
   name: '후쿠오카',
 
-  // 지도. tools/mkmap.js 가 아직 후쿠오카를 못 그리므로 지도 없이 간다 —
-  // mapImage 가 없으면 index.html 이 좌표만으로 약도를 그린다.
-  // 지도를 넣으려면 일본 국토지리원 행정경계로 SVG 를 만들고 bounds 를 맞춘다.
-  //
-  // mapImage 가 없어도 bounds 는 반드시 있어야 한다 — px() 가 위경도를 화면 좌표로
-  // 옮길 때 쓰는 범위다. 없으면 지도 렌더에서 터진다.
+  // 지도. tools/mkmap-fukuoka.js 가 국토수치정보(행정구역)로 그린다.
+  // bounds 는 mapImage 가 있든 없든 반드시 있어야 한다 — px() 가 위경도를 화면
+  // 좌표로 옮길 때 쓰는 범위다. SVG 도 같은 bounds·캔버스로 그려야 핀이 제자리에 온다.
   bounds: { w: 130.27, e: 130.58, n: 33.72, s: 33.47 },
+  mapImage: {
+    src: 'assets/fukuoka-map.svg',
+    vw: 700, vh: 800,
+    bounds: { w: 130.27, e: 130.58, n: 33.72, s: 33.47 },
+    // 국토수치정보는 정부표준이용약관 2.0 — 상업 이용·가공 자유, CC BY 4.0 호환.
+    // 출처 표시는 의무라 앱 하단에 남긴다. SA 전염은 없다.
+    credit: '국토교통성', license: '국토수치정보(행정구역)',
+    sourceUrl: 'https://nlftp.mlit.go.jp/ksj/',
+    labels: [
+      { n: '하카타', kind: 'gu', lat: 33.5920, lng: 130.4180 },
+      { n: '텐진', kind: 'gu', lat: 33.5915, lng: 130.3985 },
+      { n: '다자이후', kind: 'gu', lat: 33.5150, lng: 130.5250 },
+      { n: '하카타만', kind: 'sea', lat: 33.6550, lng: 130.3150 },
+    ],
+  },
 
   sightTypes: {
     activity: { name: '액티비티', ico: 'ferris-wheel' },

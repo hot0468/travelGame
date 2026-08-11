@@ -127,6 +127,12 @@ powershell -NoProfile -File tools/probe.ps1                                     
     **POI 좌표는 건드리지 않아도 된다**(교체 후 136곳 전부 제 구역 안에 들어옴을 확인했다).
   - 원본 저장소(southkorea/southkorea-maps)의 `gadm/` 계열은 **비상업 전용**이다. 반드시
     `kostat/` 경로만 쓴다.
+- 지도 `assets/fukuoka-map.svg`: 국토교통성 **국토수치정보**(행정구역 N03)를 가공해
+  `tools/mkmap-fukuoka.js` 가 그린다. 정부표준이용약관 2.0 — 상업 이용·가공·재배포 자유,
+  **CC BY 4.0 과 호환**이라 SA 전염이 없다. 출처 표시는 의무다(앱 하단).
+  - 후쿠오카현 시구정촌이 72개라 코드를 손으로 고르지 않는다 — `bounds` 에 걸치는 것만
+    자동으로 담는다(24곳). 원본 해안선이 촘촘해 Douglas-Peucker 로 솎아낸다(980KB → 103KB).
+  - 중계 저장소: github.com/niiyz/JapanCityGeoJson (원본을 시구정촌별로 쪼개 둔 것).
 - Lucide 아이콘: ISC. 스프라이트 상단 주석 유지.
 
 ## 게임 규칙 요약 (수치 바꿀 때 참고)
