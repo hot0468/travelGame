@@ -17,6 +17,9 @@ const REGION = process.argv.slice(2).find(a => !a.startsWith('-')) || 'busan';
   const f = path.join(dir, 'data/' + r + '.js');
   if (!fs.existsSync(f)) { console.error('data/' + r + '.js 가 없다'); process.exit(1); }
   eval(fs.readFileSync(f, 'utf8'));
+  // 지하철·경로표 같은 딸린 파일도 함께 읽는다(data/<지역>-*.js)
+  fs.readdirSync(path.join(dir, 'data')).filter(x => x.startsWith(r + '-')).forEach(x =>
+    eval(fs.readFileSync(path.join(dir, 'data', x), 'utf8')));
 });
 if (!REGIONS[REGION]) { console.error(REGION + ' 지역을 못 찾았다'); process.exit(1); }
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');

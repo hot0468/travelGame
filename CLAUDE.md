@@ -133,6 +133,13 @@ powershell -NoProfile -File tools/probe.ps1                                     
   - 후쿠오카현 시구정촌이 72개라 코드를 손으로 고르지 않는다 — `bounds` 에 걸치는 것만
     자동으로 담는다(24곳). 원본 해안선이 촘촘해 Douglas-Peucker 로 솎아낸다(980KB → 103KB).
   - 중계 저장소: github.com/niiyz/JapanCityGeoJson (원본을 시구정촌별로 쪼개 둔 것).
+- 후쿠오카 지하철 `data/fukuoka-subway.js`: kuwayamamasayuki/GTFS-FukuokaCitySubway(MIT)
+  의 GTFS 를 `tools/mksubway-fukuoka.js` 가 가공한다. **공식 배포가 아니라 개인이 만든
+  비공식 데이터**라 다이어 개정을 바로 못 따라갈 수 있다. MIT 라 이용 제약은 없다.
+  - 일본 GTFS 저장소(api.gtfs-data.jp)에는 후쿠오카시 지하철·니시테츠 버스가 **없다**.
+    후쿠오카현 피드 40개는 전부 주변 시·정촌 커뮤니티버스라 게임 장소와 안 맞는다.
+  - 그래서 후쿠오카 **버스는 여전히 근사**다. 다자이후(역에서 11.6km)·노코노시마·
+    우미노나카미치는 travel() 이 버스 접근으로 환산해 계산한다.
 - Lucide 아이콘: ISC. 스프라이트 상단 주석 유지.
 
 ## 게임 규칙 요약 (수치 바꿀 때 참고)
