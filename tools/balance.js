@@ -10,17 +10,25 @@ Math.random = () => {
 const fs = require('fs'), path = require('path');
 const dir = require('path').join(__dirname, '..');
 global.window = global;
-eval(fs.readFileSync(path.join(dir, 'data/busan.js'), 'utf8'));
+// 지역을 인자로 받는다: node tools/balance.js [지역id]. 없으면 부산.
+const REGION = process.argv.slice(2).find(a => !a.startsWith('-')) || 'busan';
+// 지역 파일은 이름이 곧 id 다(data/busan.js → REGIONS.busan).
+['busan', REGION].filter((v, i, a) => a.indexOf(v) === i).forEach(r => {
+  const f = path.join(dir, 'data/' + r + '.js');
+  if (!fs.existsSync(f)) { console.error('data/' + r + '.js 가 없다'); process.exit(1); }
+  eval(fs.readFileSync(f, 'utf8'));
+});
+if (!REGIONS[REGION]) { console.error(REGION + ' 지역을 못 찾았다'); process.exit(1); }
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 eval(html.slice(html.indexOf('const DETOUR'), html.indexOf('// 상태')) + ';global.TRANSPORT=TRANSPORT;global.TIER_RANK=TIER_RANK;global.arrival=arrival;global.arrivalCost=arrivalCost;global.BUFFS=BUFFS;');
-global.S = { region: 'busan' };
-global.poi = id => REGIONS.busan.pois.find(p => p.id === id);
+global.S = { region: REGION };
+global.poi = id => REGIONS[REGION].pois.find(p => p.id === id);
 
 const ITER = +(process.env.ITER || 3000);   // 수단 최적화 패스가 붙어 회당 비용이 커서 재시작 수는 줄였다
 const PAR = 0.62;   // par = 탐색 상한 × 이 값 → ★3 선이 상한의 77.5% 에 놓인다
 const CEIL = 0.85;  // ★3 선이 상한의 이 비율을 넘으면 사람 손에 안 닿는다고 본다
 const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
-const R = REGIONS.busan;
+const R = REGIONS[REGION];
 const levelOf = q => q.lv; // 그 의뢰가 열리는 레벨에서 쓸 수 있는 장소만 사용
 
 const ONLY = process.env.QUEST;   // QUEST=q4 로 한 의뢰만 길게 돌려 볼 수 있다
@@ -40,7 +48,7 @@ for (const q of R.quests) {
   const nBad = r => r.bad.length + r.warn.length;
   const val = r => nBad(r) ? -1e9 - nBad(r) : r.score;
   const polish = (plan, arriveId, wake, ret) => {
-    let cur = compute({ region: 'busan', quest: q, arriveId, wake, plan, ret });
+    let cur = compute({ region: REGION, quest: q, arriveId, wake, plan, ret });
     for (let pass = 0; pass < 2; pass++) {
       let moved = false;
       for (let i = 0; i < plan.length; i++) {
@@ -48,7 +56,7 @@ for (const q of R.quests) {
         for (const m of modes) {
           if (m === keep) continue;
           plan[i].mode = m;
-          const r = compute({ region: 'busan', quest: q, arriveId, wake, plan, ret });
+          const r = compute({ region: REGION, quest: q, arriveId, wake, plan, ret });
           if (val(r) > val(cur)) { cur = r; keep = m; moved = true; }
         }
         plan[i].mode = keep;
@@ -59,7 +67,7 @@ for (const q of R.quests) {
         if (poi(plan[i].id).type === 'stay' || poi(plan[i + 1].id).type === 'stay') continue;
         const sw = () => { const t = plan[i]; plan[i] = plan[i + 1]; plan[i + 1] = t; };
         sw();
-        const r = compute({ region: 'busan', quest: q, arriveId, wake, plan, ret });
+        const r = compute({ region: REGION, quest: q, arriveId, wake, plan, ret });
         if (val(r) > val(cur)) { cur = r; moved = true; } else sw();
       }
       if (!moved) break;

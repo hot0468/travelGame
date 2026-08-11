@@ -22,7 +22,7 @@ const FOOD_KIND = [
   [/밀면|국수|칼국수/, 'noodle'], [/국밥|순대|돼지국밥|해장/, 'soup'],
   [/회|스시|어시장|해산물|멸치|생선|복국|대구탕/, 'fish'],
   [/조개|곰장어|어묵/, 'shell'], [/곱창|막창|갈매기살|갈비|삼겹|불고기|주물럭|고기/, 'meat'],
-  [/낙지|곱새|물꽁|재첩|순두부|찌개|탕/, 'stew'], [/떡볶이|호떡|씨앗/, 'snack'],
+  [/낙지|곱새|물꽁|재첩|순두부|찌개|탕/, 'stew'], [/떡볶이|호떡|씨앗|포장마차|야타이/, 'snack'],
   [/파전|막걸리|산채|정식/, 'jeon'],
 ];
 const foodKind = nm => (FOOD_KIND.find(([re]) => re.test(nm)) || [, 'meal'])[1];
@@ -98,8 +98,13 @@ function svg(kind, name) {
 
 (async () => {
   global.window = global;
-  eval(fs.readFileSync(path.join(dir, 'data/busan.js'), 'utf8'));
-  const pois = REGIONS.busan.pois;
+  // 지역을 인자로 받는다: node tools/mkbanner.js [지역id]. 없으면 모든 지역.
+  const only = process.argv.slice(2).find(a => !a.startsWith('--'));
+  fs.readdirSync(path.join(dir, 'data')).filter(f => /.js$/.test(f)).forEach(f => {
+    try { eval(fs.readFileSync(path.join(dir, 'data', f), 'utf8')); } catch (e) { /* 지역 파일이 아닌 것 */ }
+  });
+  const keys = only ? [only] : Object.keys(REGIONS);
+  const pois = keys.flatMap(k => (REGIONS[k] && REGIONS[k].pois) || []);
   fs.mkdirSync(OUT, { recursive: true });
 
   if (clean) {

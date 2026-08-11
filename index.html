@@ -683,6 +683,7 @@
 
 <script src="data/busan.js"></script>
 <script src="data/seoul.js"></script>
+<script src="data/fukuoka.js"></script>
 <script src="data/subway.js"></script>
 <script src="data/transit.js"></script>
 <script src="data/photos.js"></script>
@@ -1233,7 +1234,9 @@ function applyRegion(key) {
   $('#region').close();
   save();
   document.title = '여행설계사 · ' + REGIONS[key].name;
+  renderMap._c = null;   // 핀 배치 캐시는 지역이 다르면 못 쓴다
   render();
+  fitView();             // 지도 범위가 통째로 다르다 — render 뒤에 맞춰야 캔버스 크기가 잡힌다
   if (!S.quest) $('#pick').showModal();
 }
 
@@ -1507,7 +1510,18 @@ function renderMap() {
   } else {
     const poly = pts => pts.map(([lng, lat]) => px({ lng, lat }).join(',')).join(' ');
     g += `<rect width="${rc.width}" height="${rc.height}" fill="#cfdde3"/>`;
-    g += `<polygon points="${poly(R.land)}" fill="#ffffff" stroke="#b6c4ce" stroke-width="1.5"/>`;
+    // land 는 지역마다 손으로 그려 넣는 데이터라 없는 게 정상이다.
+    // 없다고 여기서 터지면 뒤의 핀·이름표가 통째로 안 그려진다(지도가 빈 채로 남는다).
+    if (R.land) g += `<polygon points="${poly(R.land)}" fill="#ffffff" stroke="#b6c4ce" stroke-width="1.5"/>`;
+    else {
+      // 윤곽이 없으면 장소가 퍼져 있는 만큼만 옅게 깔아 "여기가 무대" 임을 보인다.
+      const xs = R.pois.map(q => px(q));
+      const x1 = Math.min(...xs.map(v => v[0])), x2 = Math.max(...xs.map(v => v[0]));
+      const y1 = Math.min(...xs.map(v => v[1])), y2 = Math.max(...xs.map(v => v[1]));
+      const m = 46;
+      g += `<rect x="${x1 - m}" y="${y1 - m}" width="${x2 - x1 + m * 2}" height="${y2 - y1 + m * 2}"
+             rx="28" fill="#ffffff" stroke="#b6c4ce" stroke-width="1.5"/>`;
+    }
     (R.islands || []).forEach(i => g += `<polygon points="${poly(i)}" fill="#ffffff" stroke="#b6c4ce" stroke-width="1.5"/>`);
     (R.labels || []).forEach(l => { const [x, y] = px(l); g += `<text x="${x}" y="${y}" font-size="13" text-anchor="middle" fill="#7b8d99" letter-spacing="2">${l.n}</text>`; });
   }
@@ -1537,7 +1551,7 @@ function renderMap() {
   PIN.clear();
   // 핀 충돌 완화(13.8ms)는 줌·필터·일정이 같으면 결과가 평행이동뿐이다 —
   // 팬 중에는 이전 배치를 밀어서 재사용하고, 키가 바뀔 때만 다시 푼다.
-  const mkey = `${V.k}|${S.tab}|${S.sub || ''}|${S.gu || ''}|${lv}|${S.plan.map(e => e.id).join(',')}`;
+  const mkey = `${S.region}|${V.k}|${S.tab}|${S.sub || ''}|${S.gu || ''}|${lv}|${S.plan.map(e => e.id).join(',')}`;
   let laid;
   if (renderMap._c && renderMap._c.key === mkey) {
     const c = renderMap._c, dx = V.tx - c.tx, dy = V.ty - c.ty;
