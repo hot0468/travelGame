@@ -7,6 +7,7 @@
 
 ```
 index.html      UI + 엔진 전부 인라인 (~1100줄). CSS → HTML → JS(엔진 → 상태 → 렌더 → 이벤트 → 자체점검)
+data/seoul.js   서울 — 뼈대만 있는 준비 중 지역. 새 지역을 만들 때 이 파일을 보고 시작한다.
 data/busan.js   부산 데이터: REGIONS.busan = { mapImage, origins, starts, staminaTypes,
                 sightTypes/foodTypes/ageTypes, pois(136), quests(6) }
 data/subway.js  부산 도시철도 1~4호선(역 108개). REGIONS.busan.subway = { lines[], pos{} }.
@@ -23,6 +24,28 @@ tools/          검증·캡처 스크립트 (아래)
 핵심 엔진 함수(index.html): `compute(state)` 일정 시뮬레이션(비용·시간·체력·위반),
 `travel(a,b,mode,people,depart,weekend)` 이동시간(직선거리×1.35, 출퇴근 1.5배),
 `drain()` 체력, `dowOf()` 요일. 상태는 전역 `S`, 렌더는 `render()` 하나로 전부 다시 그림.
+
+## 지역 추가
+
+첫 실행에 지역 선택창이 뜬다(고른 지역은 localStorage 에 남아 다시 묻지 않는다).
+상단 지역 칩을 누르면 언제든 바꿀 수 있고, 바꾸면 짜던 일정은 비워진다 —
+장소·의뢰가 지역마다 통째로 다르기 때문이다.
+
+선택창은 `REGIONS` 를 훑어 만들어지므로 **지역을 더해도 UI 코드는 손대지 않는다.**
+`pois`·`quests` 가 비어 있으면 "준비 중" 으로 뜨고 고를 수 없다.
+
+1. `data/<지역>.js` 에 `REGIONS.<지역>` 을 등록한다(`data/seoul.js` 가 뼈대다).
+   필수: `name, sightTypes, foodTypes, ageTypes, staminaTypes, dayNames, origins, starts, pois, quests`
+2. `index.html` 에 `<script src="data/<지역>.js"></script>` 한 줄.
+3. 지도는 `tools/mkmap.js` 를 그 지역 경계로 고쳐 만든다(`mapImage.bounds` 와 캔버스를 맞춘다).
+4. 대중교통 실측이 있으면 `tools/mktransit.js` 로 경로표를 굽는다.
+   없으면 `travel()` 이 직선거리 근사로 돌아간다(`real` 이 false 가 된다) — 그대로도 돌아간다.
+5. 사진은 `tools/mkbanner.js` 로 유형별 배너부터 깔고, 실사는 `admin.html` 로 넣는다.
+6. `node tools/balance.js` 로 그 지역 의뢰의 `par` 를 잡는다.
+
+**해외도 같은 방식이다.** 통화·도시간 교통편만 그 나라에 맞게 쓰면 된다. 지도는 해당국
+공공데이터나 Natural Earth(퍼블릭 도메인)를 쓰고, 대중교통은 GTFS 가 공개된 도시라면
+`mktransit.js` 를 고쳐 실측을 넣을 수 있다.
 
 ## 검증 — 코드·데이터를 바꿨으면 반드시
 

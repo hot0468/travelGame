@@ -371,6 +371,22 @@
          max-width:380px;text-align:center;box-shadow:7px 8px 0 rgba(59,50,97,.22);animation:popin .26s cubic-bezier(.34,1.56,.64,1)}
   dialog.wide{max-width:560px;width:90vw;text-align:left;max-height:86vh;overflow-y:auto}
   dialog::backdrop{background:rgba(59,50,97,.42);backdrop-filter:blur(4px)}
+  /* 지역 선택 — 카드마다 지도를 옅게 깔고 이름·규모를 얹는다 */
+  .regions{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px;margin-top:14px}
+  .rcard{position:relative;overflow:hidden;border:3px solid var(--ink);border-radius:16px;
+         background:var(--panel2);padding:0;cursor:pointer;text-align:left;font-family:inherit;
+         box-shadow:3px 4px 0 rgba(59,50,97,.16);transition:transform .12s}
+  .rcard:hover{transform:translate(-1px,-2px);box-shadow:4px 6px 0 rgba(59,50,97,.2)}
+  .rcard:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .rcard .thumb{height:78px;background:#dbe7ee center/cover no-repeat;border-bottom:2.5px solid var(--ink);
+                display:flex;align-items:center;justify-content:center}
+  .rcard .thumb img{width:100%;height:100%;object-fit:cover}
+  .rcard .rbody{padding:8px 11px 10px}
+  .rcard .rnm{font-weight:800;font-size:15px}
+  .rcard .rsub{font-size:11.5px;color:var(--dim);margin-top:2px}
+  .rcard.on{border-color:var(--acc);box-shadow:0 0 0 3px #ffd9e6,3px 4px 0 rgba(59,50,97,.16)}
+  .rcard .soon{position:absolute;top:7px;right:7px;background:var(--dim);color:#fff;
+               font-size:10px;font-weight:800;padding:1px 7px;border-radius:999px}
   dialog h3{margin:0 0 6px;font-size:20px}
   .stars{display:flex;justify-content:center;gap:8px;margin:10px 0}
   .stars .ic{width:38px;height:38px;stroke:#c9d2dc;stroke-width:1.6;opacity:0;transform:scale(.35) rotate(-40deg);
@@ -543,7 +559,7 @@
 </svg>
 <header>
   <h1><svg class="ic big"><use href="#i-compass"/></svg> 여행설계사</h1>
-  <span class="chip" id="regionName">부산</span>
+  <button class="chip" id="regionName" data-act="region" title="지역 바꾸기">부산</button>
   <span class="grow"></span>
   <div class="mapctl">
     <button id="zout" title="축소"><svg class="ic"><use href="#i-minus"/></svg></button>
@@ -610,6 +626,12 @@
 </main>
 
 <!-- 시작 화면: 의뢰 고르기 -->
+<dialog id="region" class="wide">
+  <h3>어디로 가볼까요</h3>
+  <p class="s">여행을 설계할 도시를 고르세요. 나중에 상단 지역 버튼으로 바꿀 수 있습니다.</p>
+  <div class="regions" id="regionList"></div>
+</dialog>
+
 <dialog id="pick" class="wide">
   <h3>어떤 의뢰를 맡으시겠습니까?</h3>
   <p class="s" style="margin:0 0 14px">
@@ -660,6 +682,7 @@
 <dialog id="result"></dialog>
 
 <script src="data/busan.js"></script>
+<script src="data/seoul.js"></script>
 <script src="data/subway.js"></script>
 <script src="data/transit.js"></script>
 <script src="data/photos.js"></script>
@@ -1160,6 +1183,40 @@ const S = Object.assign({ region: 'busan', quest: null, plan: [], startMin: 540,
   JSON.parse(localStorage.getItem(SAVE) || '{}'));
 S.plan = S.plan || [];
 
+// ── 지역 선택 ────────────────────────────────────────────────
+// REGIONS 를 훑어 카드를 만든다. 지역을 추가하면 여기 코드는 손대지 않아도 된다.
+function renderRegions() {
+  const box = $('#regionList');
+  box.innerHTML = Object.keys(REGIONS).map(key => {
+    const R = REGIONS[key];
+    const ready = !!(R.pois && R.pois.length && R.quests && R.quests.length);
+    const thumb = R.mapImage ? `<img src="${esc(R.mapImage.src)}" alt="">` : ic('map');
+    const sub = ready ? `장소 ${R.pois.length}곳 · 의뢰 ${R.quests.length}건` : '준비 중';
+    return `<button class="rcard ${key === S.region ? 'on' : ''}" data-region="${esc(key)}"
+      ${ready ? '' : 'disabled'}>
+      ${ready ? '' : '<span class="soon">준비 중</span>'}
+      <div class="thumb">${thumb}</div>
+      <div class="rbody"><div class="rnm">${esc(R.name)}</div><div class="rsub">${sub}</div></div>
+    </button>`;
+  }).join('');
+}
+// 지역을 바꾸면 그 지역 기준으로 처음부터 짠다 — 장소·의뢰가 통째로 다르기 때문이다.
+function chooseRegion(key) {
+  if (!REGIONS[key]) return;
+  const changed = key !== S.region;
+  S.region = key;
+  S.regionPicked = true;
+  if (changed) {
+    S.quest = null; S.plan = []; S.sel = null; S.pop = null; S.day = 0;
+    S.arriveId = null; S.ret = null; S.wake = {}; S.gu = null; S.tab = 'all'; S.sub = null;
+  }
+  $('#region').close();
+  save();
+  document.title = '여행설계사 · ' + REGIONS[key].name;
+  render();
+  if (!S.quest) $('#pick').showModal();
+}
+
 const level = () => Math.min(5, 1 + Math.floor(S.xp / 120));
 const hasBuff = id => S.buffs.includes(id);
 const ST = q => REGIONS[S.region].staminaTypes[q.staminaType];
@@ -1247,7 +1304,8 @@ const pinIcon = p => p.type === 'sight' ? SUBT(p).ico
                    : p.tier === 'hotel' ? 'hotel' : 'bed-double';
 const wakeOf = d => d === 0 ? (arrival(S) ? arrival(S).arrive : S.startMin) : (S.wake[d] ?? DAY_START);
 const poi = id => REGIONS[S.region].pois.find(p => p.id === id);
-const save = () => localStorage.setItem(SAVE, JSON.stringify({ xp: S.xp, cleared: S.cleared, buffs: S.buffs }));
+const save = () => localStorage.setItem(SAVE, JSON.stringify(
+  { xp: S.xp, cleared: S.cleared, buffs: S.buffs, region: S.region, regionPicked: S.regionPicked }));
 
 // ─────────────────────────────────────────────────────────────
 // 렌더
@@ -2224,12 +2282,16 @@ document.addEventListener('click', ev => {
   if (act) {
     const a = act.dataset.act;
     if (a === 'pick') $('#pick').showModal();
+    else if (a === 'region') { renderRegions(); $('#region').showModal(); }
     else if (a === 'trip') openTrip();
     else if (a === 'closepop') closePoi();
     else if (a === 'closegu') { S.gu = null; render(); }
     else if (a === 'closebuff') $('#buffpop').hidden = true;
     return;
   }
+
+  const rg = near('[data-region]');
+  if (rg) { chooseRegion(rg.dataset.region); return; }
 
   const add = near('[data-add]');
   if (add) { openMove(add.dataset.add); return; }
@@ -2535,7 +2597,15 @@ $('#buff').addEventListener('cancel', e => e.preventDefault());
 
 // 시작
 render();
-if (!S.quest) $('#pick').showModal();
+// 지역을 고른 적이 없으면 지역부터 묻는다. 한 번 고르면 저장되어 다시 묻지 않는다.
+// 지역이 하나뿐이면 물을 것도 없으니 건너뛴다.
+if (!S.regionPicked && Object.keys(REGIONS).length > 1) {
+  renderRegions();
+  $('#region').showModal();
+} else {
+  S.regionPicked = true;
+  if (!S.quest) $('#pick').showModal();
+}
 
 // ─────────────────────────────────────────────────────────────
 // 자체 점검:  index.html?test  로 열면 콘솔에 결과 출력
