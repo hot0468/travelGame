@@ -5,7 +5,7 @@
 //
 // 대중교통: 지하철 3개 노선은 GTFS 실측이다(data/fukuoka-subway.js, tools/mksubway-fukuoka.js).
 // 버스는 데이터가 없어 직선거리 근사로 돈다 — 니시테츠 버스 GTFS 가 공개돼 있지 않다.
-// 다자이후·노코노시마·우미노나카미치는 지하철역에서 7~12km 라 travel() 이 버스 접근으로 환산한다.
+// 장소는 모두 지하철·니시테츠 역에서 1km 안이라 근사로 도는 구간이 거의 없다.
 //
 // 좌표는 실제 위경도다. 요금·체류시간은 근사치이니 자유롭게 고쳐도 된다.
 window.REGIONS = window.REGIONS || {};
@@ -98,10 +98,12 @@ REGIONS.fukuoka = {
       lat: 33.5866, lng: 130.3789, cost: 0, stay: 80, joy: 7, open: [0, 1440] },
     { id: 'canalcity', gu: '하카타구', name: '캐널시티 하카타', type: 'sight', sub: 'shopping',
       lat: 33.5897, lng: 130.4113, cost: 0, stay: 100, joy: 6, open: [600, 1320] },
-    { id: 'nokonoshima', gu: '니시구', name: '노코노시마 아일랜드파크', type: 'sight', sub: 'nature',
-      lat: 33.6446, lng: 130.3222, cost: 13500, stay: 150, joy: 8, open: [540, 1050] },
-    { id: 'uminaka', gu: '히가시구', name: '우미노나카미치 해변공원', type: 'sight', sub: 'activity',
-      lat: 33.6626, lng: 130.3494, cost: 4500, stay: 160, joy: 7, open: [570, 1050] },
+    // 아이 동반 의뢰(f3)의 필수 코스. 사쿠라자카역 100m 라 접근이 쉽다.
+    { id: 'zoo', gu: '주오구', name: '후쿠오카시 동식물원', type: 'sight', sub: 'activity',
+      lat: 33.5766, lng: 130.3862, cost: 6300, stay: 140, joy: 7, open: [540, 1050] },
+    // 하카타 강변 쇼핑몰. 나카스카와바타역 300m.
+    { id: 'yutotemi', gu: '하카타구', name: '유통테미 (하카타 리버레인)', type: 'sight', sub: 'shopping',
+      lat: 33.5940, lng: 130.4093, cost: 0, stay: 90, joy: 6, open: [600, 1200] },
 
     // 식당 8 — 후쿠오카는 라멘·모츠나베·명란이 유명하다
     { id: 'ichiran', gu: '주오구', name: '이치란 라멘 본점', type: 'food', sub: 'meal',
@@ -142,9 +144,9 @@ REGIONS.fukuoka = {
       desc: '부모님 모시고 갑니다. 너무 많이 걷지 않았으면 해요.',
       days: 2, budget: 1200000, people: 3, stamina: 90, staminaType: 'morning',
       age: '60대 이상', startDow: 1, must: ['dazaifu'], minSights: 3, endBy: 1200, par: 203 },
-    { id: 'f3', lv: 3, title: '아이와 바다 보러', from: '서울',
-      desc: '아이가 바다를 좋아해요. 뛰어놀 데가 있으면 좋겠습니다.',
+    { id: 'f3', lv: 3, title: '아이랑 셋이서', from: '서울',
+      desc: '아이가 동물을 좋아해요. 뛰어놀 데가 있으면 좋겠습니다.',
       days: 3, budget: 1800000, people: 4, stamina: 100, staminaType: 'motionsick',
-      age: '아이 동반', startDow: 5, must: ['uminaka'], minSights: 4, endBy: 1230, par: 250 },
+      age: '아이 동반', startDow: 5, must: ['zoo'], minSights: 4, endBy: 1230, par: 296 },
   ],
 };
