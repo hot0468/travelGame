@@ -1200,16 +1200,36 @@ function renderRegions() {
     </button>`;
   }).join('');
 }
+// 받침이 있으면 '으로', 없으면 '로'. 한글 음절의 종성 여부로 가른다(로/으로는 ㄹ 받침도 '로').
+function euro(w) {
+  const c = w.charCodeAt(w.length - 1) - 0xAC00;
+  if (c < 0 || c > 11171) return w + '로';          // 한글이 아니면 그냥 로
+  const jong = c % 28;
+  return w + (jong === 0 || jong === 8 ? '로' : '으로');   // 8 = ㄹ
+}
 // 지역을 바꾸면 그 지역 기준으로 처음부터 짠다 — 장소·의뢰가 통째로 다르기 때문이다.
+// 짜던 일정이 있으면 날아가므로 한 번 확인받는다.
 function chooseRegion(key) {
   if (!REGIONS[key]) return;
-  const changed = key !== S.region;
+  if (key === S.region) { $('#region').close(); S.regionPicked = true; save(); return; }
+  // 잃을 게 있을 때만 묻는다. 의뢰도 안 고른 상태면 그냥 넘어간다.
+  const busy = S.quest || (S.plan && S.plan.length);
+  if (!busy) { applyRegion(key); return; }
+  // 모달 위에 모달을 띄우면 겹쳐서 못 누른다 — 지역창을 닫고 묻는다.
+  $('#region').close();
+  const n = (S.plan || []).length;
+  ask('지역을 바꿀까요?',
+      `${euro(REGIONS[key].name)} 옮기면 지금 의뢰와 일정${n ? ` ${n}곳` : ''}이 사라집니다. `
+      + '장소와 의뢰가 지역마다 달라 이어서 짤 수 없습니다.',
+      euro(REGIONS[key].name) + ' 가기',
+      () => applyRegion(key),
+      () => { renderRegions(); $('#region').showModal(); });   // 취소하면 제자리로
+}
+function applyRegion(key) {
   S.region = key;
   S.regionPicked = true;
-  if (changed) {
-    S.quest = null; S.plan = []; S.sel = null; S.pop = null; S.day = 0;
-    S.arriveId = null; S.ret = null; S.wake = {}; S.gu = null; S.tab = 'all'; S.sub = null;
-  }
+  S.quest = null; S.plan = []; S.sel = null; S.pop = null; S.day = 0;
+  S.arriveId = null; S.ret = null; S.wake = {}; S.gu = null; S.tab = 'all'; S.sub = null;
   $('#region').close();
   save();
   document.title = '여행설계사 · ' + REGIONS[key].name;
@@ -1893,12 +1913,12 @@ function openPoi(id) {
 // 일정표: 시간 비례 타임라인 -----------------------------------
 let justAdded = false;     // 방금 담긴 블록에만 등장 연출을 준다
 // 되돌릴 수 없는 동작은 딤 팝업으로 한 번 확인받는다
-let askCb = null;
-function ask(title, msg, yes, cb) {
+let askCb = null, askNoCb = null;
+function ask(title, msg, yes, cb, noCb) {
   $('#askhd').textContent = title;
   $('#askmsg').textContent = msg;
   $('#askyes').textContent = yes;
-  askCb = cb;
+  askCb = cb; askNoCb = noCb || null;
   $('#ask').showModal();
 }
 
@@ -2582,8 +2602,12 @@ function offerBuff() {
 }
 
 // ── 시작 화면 ────────────────────────────────────────────────
-$('#askyes').onclick = () => { $('#ask').close(); const f = askCb; askCb = null; if (f) f(); };
-$('#askno').onclick = () => { $('#ask').close(); askCb = null; };
+$('#askyes').onclick = () => { $('#ask').close(); askNoCb = null; const f = askCb; askCb = null; if (f) f(); };
+$('#askno').onclick = () => {
+  $('#ask').close();
+  askCb = null;
+  const f = askNoCb; askNoCb = null; if (f) f();
+};
 $('#ask').addEventListener('cancel', () => { askCb = null; });
 
 $('#pickclose').onclick = () => $('#pick').close();
