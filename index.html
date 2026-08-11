@@ -239,7 +239,16 @@
           border:1px solid #9fb9d8;color:#274b73;z-index:1}
   /* ── 인터랙션 연출 ─────────────────────────────── */
   /* 손님 반응 토스트 — 상단에 잠깐 떴다 사라진다 */
-  #toasts{position:fixed;top:62px;left:50%;transform:translateX(-50%);z-index:22;
+  /* 떠 있는 시계 — 헤더 아래 가운데. 토스트와 같은 자리라 살짝 왼쪽으로 비켜 둔다 */
+  #clockpop{position:fixed;top:60px;left:50%;transform:translateX(-50%) rotate(-.5deg);z-index:13;
+            background:var(--panel);border:2.5px solid var(--ink);border-radius:999px;
+            padding:6px 14px;font-size:13.5px;box-shadow:var(--hard);
+            font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+  #clockpop b{color:var(--acc)}
+  #clockpop[hidden]{display:none}
+  @media (max-width:720px){#clockpop{top:auto;bottom:calc(var(--sheet-h,92px) + 12px);left:10px;transform:none;font-size:12.5px;padding:5px 11px}}
+  /* 시계 바로 아래에 쌓인다 — 같은 자리면 시계가 가려진다 */
+  #toasts{position:fixed;top:102px;left:50%;transform:translateX(-50%);z-index:22;
           display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
   .toast{display:flex;align-items:center;gap:8px;padding:10px 17px;border-radius:999px;
          background:var(--panel);border:2.5px solid var(--ink);font-size:13.5px;font-weight:700;white-space:nowrap;
@@ -465,7 +474,7 @@
     #poipop{width:min(92vw,320px)}
     #buffpop{width:min(92vw,320px)}
     dialog.wide{width:94vw;padding:18px 16px}
-    #toasts{top:auto;bottom:calc(var(--sheet-h,92px) + 10px);width:92vw}
+    #toasts{top:auto;bottom:calc(var(--sheet-h,92px) + 52px);width:92vw}   /* 시계(좌하단) 위로 */
 
     /* 손가락 타깃 키우기 */
     .blk .bx{width:22px;height:22px;top:1px;right:1px}
@@ -605,6 +614,8 @@
   <!-- 레벨 옆 버프 버튼이 여는 목록 -->
   <div id="buffpop" hidden></div>
 <div id="toasts"></div>
+<!-- 떠 있는 시계: 다음 일정이 출발하는 시각. 의뢰를 맡는 순간부터 보인다 -->
+<div id="clockpop" hidden></div>
 
   <!-- 우: 일정 (지도 위 레이어) -->
   <div class="panel right" id="pright">
@@ -654,6 +665,13 @@
   <h3 id="triphd"></h3>
   <p class="s" style="margin:0 0 14px" id="tripsub"></p>
   <div id="tripopts"></div>
+</dialog>
+
+<!-- 교통편을 고르면 이어서 묻는 렌터카 대여 여부 -->
+<dialog id="rentcar" class="wide">
+  <h3><svg class="ic big"><use href="#i-car"/></svg> 렌터카를 빌릴까요?</h3>
+  <p class="s" style="margin:0 0 14px" id="rentsub"></p>
+  <div id="rentopts"></div>
 </dialog>
 
 <!-- 레벨업 보상: 2종 중 1개 -->
@@ -1400,6 +1418,16 @@ function render() {
 
   // 좌상단 HUD: 진행 중인 의뢰 (작게)
   const q = S.quest;
+  // 떠 있는 시계: 지금 장소를 담으면 몇 일차 몇 시에 출발하는지 — 넣기 전에 시간을 가늠하게.
+  const bc = q ? blockCtx() : null;
+  $('#clockpop').hidden = !bc;
+  // 일차는 탭이 아니라 출발 시각에서 역산한다 — 숙소로 하루를 안 닫았으면
+  // 2일차 탭이어도 일정은 1일차에 이어 붙는다. 라벨이 탭을 따라가면 거짓말이 된다.
+  if (bc) {
+    const d = Math.floor(bc.depart / 1440);
+    $('#clockpop').innerHTML =
+      `${ic('clock')} ${d + 1}일차 ${dowName(R, dowOf(q, d))} · <b>${hhmm(bc.depart)}</b> 출발`;
+  }
   $('#active').innerHTML = q ? `<div class="card on">
       <div class="t" style="font-size:15px">${esc(q.title)}</div>
       <div class="qline">${ic("wallet")} ${won(q.budget)} · ${ic("calendar-days")} ${q.days}일 · ${ic("users")} ${q.people}인</div>
@@ -1755,6 +1783,26 @@ function openLetter(q) {
   $('#letbody').innerHTML = letterBody(q);
   $('#letgo').innerHTML = `${ic('check')} 맡겠습니다`;
   $('#letter').showModal();
+}
+
+// 교통편을 고른 뒤 렌터카를 빌릴지 묻는다. 요금 규칙은 그대로다(쓰는 날만 일 대여료) —
+// 이 선택은 장소를 담을 때의 기본 이동수단만 정한다. 물을 이유가 없는 경우는 조용히 넘어간다.
+function openRent() {
+  const q = S.quest, arr = arrival(S);
+  if (!q || S.defMode) return;
+  if ((q.banModes || []).includes('car')) { S.defMode = 'bus'; return; }   // 렌터카 금지 의뢰
+  if (arr && arr.per === 'car') { S.defMode = 'car'; return; }             // 자차로 왔으면 이미 차가 있다
+  $('#rentsub').textContent = `하루 ${won(CAR_DAILY)} — 렌터카를 쓴 날만 부과됩니다. 지금 정해도 구간마다 수단은 바꿀 수 있어요.`;
+  $('#rentopts').innerHTML = `
+    <div class="card" data-rent="yes">
+      <div class="t">${ic('car', 'big')} 빌린다</div>
+      <div class="s" style="margin-top:4px">기본 이동수단이 렌터카가 됩니다. 문 앞까지 가서 덜 지치지만, 주차 대기가 있고 출퇴근 정체를 받습니다.</div>
+    </div>
+    <div class="card" data-rent="no">
+      <div class="t">${ic('bus', 'big')} 괜찮다, 대중교통으로</div>
+      <div class="s" style="margin-top:4px">기본 이동수단이 버스가 됩니다. 나중에 구간에서 렌터카를 골라도 그날 대여료만 붙습니다.</div>
+    </div>`;
+  $('#rentcar').showModal();
 }
 
 function openTrip() {
@@ -2268,7 +2316,7 @@ function addPoi(id, mode) {
   const p = poi(id);
   if (!S.quest || whyBlocked(p)) return;
   const i = insertAtDay(S.day);      // 보고 있는 일차에 들어간다
-  S.plan.splice(i, 0, { id, mode: mode || 'bus', stay: p.stay });
+  S.plan.splice(i, 0, { id, mode: mode || S.defMode || 'bus', stay: p.stay });
   // 체력이 바닥나는 일정은 담지 않는다. whyBlocked 는 "가장 덜 지치는 수단" 으로만 보므로
   // 수단이 정해진 지금이 정확한 판정 지점이다 — 열 시간 걷는 구간이 여기서 걸린다.
   if (compute(S).dayStat.some(s => s.low < 0)) { S.plan.splice(i, 1); say('tired'); return; }
@@ -2316,13 +2364,15 @@ document.addEventListener('click', ev => {
   if (bf) { S.buffs.push(bf.dataset.buff); pendingPick = false; save(); $('#buff').close(); render(); return; }
 
   const tr = near('[data-trip]');
-  if (tr) { S.arriveId = tr.dataset.trip; $('#trip').close(); render(); return; }
+  if (tr) { S.arriveId = tr.dataset.trip; $('#trip').close(); render(); openRent(); return; }
+  const rc = near('[data-rent]');
+  if (rc) { S.defMode = rc.dataset.rent === 'yes' ? 'car' : 'bus'; $('#rentcar').close(); render(); return; }
 
   const q = near('[data-quest]');
   if (q) {
     const quest = REGIONS[S.region].quests.find(x => x.id === q.dataset.quest);
     if (quest.lv <= level()) {
-      S.quest = quest; S.plan = []; S.sel = null; S.day = 0; S.arriveId = null; S.ret = null; S.wake = {}; S.pop = null;
+      S.quest = quest; S.plan = []; S.sel = null; S.day = 0; S.arriveId = null; S.ret = null; S.wake = {}; S.pop = null; S.defMode = null;
       $('#pick').close(); render(); openLetter(quest);   // 편지를 닫으면 교통편 선택으로 이어진다
     }
     return;
@@ -2644,6 +2694,8 @@ $('#pickclose').onclick = () => $('#pick').close();
 // 편지는 버튼으로 닫든 Esc 로 닫든 교통편 선택으로 이어져야 한다 — close 이벤트에 건다.
 $('#letgo').onclick = () => $('#letter').close();
 $('#letter').addEventListener('close', () => openTrip());
+// Esc 로 닫으면 안 빌리는 것으로 — 미정 상태를 남기지 않는다
+$('#rentcar').addEventListener('close', () => { if (!S.defMode) { S.defMode = 'bus'; render(); } });
 // 아직 의뢰를 안 골랐으면 Esc 로 닫지 못하게 (닫아봐야 할 게 없다)
 $('#pick').addEventListener('cancel', e => { if (!S.quest) e.preventDefault(); });
 $('#trip').addEventListener('cancel', e => { if (!S.arriveId) e.preventDefault(); });

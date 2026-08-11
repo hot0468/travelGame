@@ -72,9 +72,11 @@ REGIONS.fukuoka = {
       // 부산~하카타 크루즈선(카멜리아라인). 고속선(비틀·코비)은 운항 종료로 뺐다.
       // 밤배로 가서 아침에 내리므로 도착이 항공보다 이르고, 자면서 가니 덜 지친다.
       // min 은 귀가에 쓰는 낮배 기준(12:30→18:00). 갈 때 시간은 arrive 가 대신 말해 준다.
-      { id: 'ferry', name: '크루즈선', ico: 'ship', to: 'hakataport', cost: 110000, per: 'person',
+      // 부산~후쿠오카는 LCC 가 편도 5~10만 선이다. 15만으로 두면 2인 왕복이
+      // f1 예산(70만)의 86%를 먹어 여행이 성립하지 않는다.
+      { id: 'ferry', name: '크루즈선', ico: 'ship', to: 'hakataport', cost: 90000, per: 'person',
         arrive: 450, min: 330, drain: .12 },
-      { id: 'air', name: '항공', ico: 'plane', to: 'fukair', cost: 150000, per: 'person',
+      { id: 'air', name: '항공', ico: 'plane', to: 'fukair', cost: 85000, per: 'person',
         arrive: 615, min: 55, drain: .09 },
     ],
   },
@@ -178,7 +180,7 @@ REGIONS.fukuoka = {
       desc: '부산에서 배 타고 갑니다. 라멘만 먹어도 좋아요.',
       days: 2, budget: 700000, people: 2, stamina: 110, staminaType: 'energizer',
       // 고속선 폐지로 크루즈선 왕복(밤배+낮배 5.5h)이 이동시간을 크게 먹는다 — par 도 같이 내렸다
-      age: '20대', startDow: 4, must: ['ichiran'], minSights: 2, endBy: 1260, par: 41 },
+      age: '20대', startDow: 4, must: ['ichiran'], minSights: 2, endBy: 1260, par: 236 },
     { id: 'f2', lv: 2, title: '부모님과 다자이후', from: '서울',
       desc: '부모님 모시고 갑니다. 너무 많이 걷지 않았으면 해요.',
       days: 2, budget: 1200000, people: 3, stamina: 90, staminaType: 'morning',
