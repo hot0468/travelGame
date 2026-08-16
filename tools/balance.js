@@ -26,7 +26,7 @@ const REGION = process.argv.slice(2).find(a => !a.startsWith('-')) || 'busan';
 });
 if (!REGIONS[REGION]) { console.error(REGION + ' 지역을 못 찾았다'); process.exit(1); }
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
-eval(html.slice(html.indexOf('const DETOUR'), html.indexOf('// 상태')) + ';global.TRANSPORT=TRANSPORT;global.TIER_RANK=TIER_RANK;global.arrival=arrival;global.arrivalCost=arrivalCost;global.BUFFS=BUFFS;');
+eval(html.slice(html.indexOf('const DETOUR'), html.indexOf('// 상태')) + ';global.TRANSPORT=TRANSPORT;global.TIER_RANK=TIER_RANK;global.arrival=arrival;global.arrivalCost=arrivalCost;global.BUFFS=BUFFS;global.tripsOf=tripsOf;');
 global.S = { region: REGION };
 global.poi = id => REGIONS[REGION].pois.find(p => p.id === id);
 
@@ -53,16 +53,25 @@ for (const q of R.quests) {
   // 상한 탐색에서는 bad 와 똑같이 실격으로 봐야 한다 — 안 그러면 조건을 버린 일정이 상한을 만든다.
   const nBad = r => r.bad.length + r.warn.length;
   const val = r => nBad(r) ? -1e9 - nBad(r) : r.score;
-  const polish = (plan, arriveId, wake, ret) => {
-    let cur = compute({ region: REGION, quest: q, arriveId, wake, plan, ret });
+  // sel.dep 은 예매한 편의 출발 시각 — 폴리시 안에서 함께 최적화하고 호출자에게 돌려준다.
+  const polish = (plan, arriveId, sel, wake, ret) => {
+    const opt = R.origins[q.from].find(o => o.id === arriveId);
+    const deps = tripsOf(R, opt).map(t => t.dep);
+    let cur = compute({ region: REGION, quest: q, arriveId, depMin: sel.dep, wake, plan, ret });
     for (let pass = 0; pass < 2; pass++) {
       let moved = false;
+      // 어느 편을 끊느냐로 첫날 길이와 요금이 같이 움직인다 — 수단보다 먼저 훑는다
+      for (const dep of deps) {
+        if (dep === sel.dep) continue;
+        const r = compute({ region: REGION, quest: q, arriveId, depMin: dep, wake, plan, ret });
+        if (val(r) > val(cur)) { cur = r; sel.dep = dep; moved = true; }
+      }
       for (let i = 0; i < plan.length; i++) {
         let keep = plan[i].mode;
         for (const m of modes) {
           if (m === keep) continue;
           plan[i].mode = m;
-          const r = compute({ region: REGION, quest: q, arriveId, wake, plan, ret });
+          const r = compute({ region: REGION, quest: q, arriveId, depMin: sel.dep, wake, plan, ret });
           if (val(r) > val(cur)) { cur = r; keep = m; moved = true; }
         }
         plan[i].mode = keep;
@@ -73,7 +82,7 @@ for (const q of R.quests) {
         if (poi(plan[i].id).type === 'stay' || poi(plan[i + 1].id).type === 'stay') continue;
         const sw = () => { const t = plan[i]; plan[i] = plan[i + 1]; plan[i + 1] = t; };
         sw();
-        const r = compute({ region: REGION, quest: q, arriveId, wake, plan, ret });
+        const r = compute({ region: REGION, quest: q, arriveId, depMin: sel.dep, wake, plan, ret });
         if (val(r) > val(cur)) { cur = r; moved = true; } else sw();
       }
       if (!moved) break;
@@ -125,14 +134,17 @@ for (const q of R.quests) {
     // 시작지점도 플레이어의 선택지 (의뢰가 고정했으면 startPoint()가 무시함)
     const opts = R.origins[q.from];
     const arriveId = opts[Math.random() * opts.length | 0].id;
+    // 예매 시간대도 플레이어의 선택지 (새벽편은 첫날이 길지만 25% 비싸다)
+    const trips = tripsOf(R, opts.find(o => o.id === arriveId));
+    const sel = { dep: trips[Math.random() * trips.length | 0].dep };
     // 기상 시각도 플레이어의 선택지 (늦게 일어나면 체력은 차지만 관광 시간이 준다)
     const wake = {};
     for (let d = 1; d < q.days; d++) wake[d] = 360 + (Math.random() * 8 | 0) * 30;
     const ret = { mode: modes[Math.random() * modes.length | 0] };   // 귀가 수단도 선택지
-    const res = polish(plan, arriveId, wake, ret);
+    const res = polish(plan, arriveId, sel, wake, ret);
     res.bad.concat(res.warn).forEach(m => { const k = m.replace(/[\d,]+원?/g, 'N').split(':')[0]; why[k] = (why[k] || 0) + 1; });
     minSpend = Math.min(minSpend, res.spend);
-    if (!nBad(res) && (!best || res.score > best.score)) best = { score: res.score, res, plan, arriveId, wake };
+    if (!nBad(res) && (!best || res.score > best.score)) best = { score: res.score, res, plan, arriveId, dep: sel.dep, wake };
   }
   if (!best) {
     console.error(`✘ [${q.id}] ${q.title} — 유효한 일정을 못 찾음`);
@@ -150,6 +162,8 @@ for (const q of R.quests) {
     + ` · ★3 선 ${need}점 = 상한의 ${(ratio * 100).toFixed(1)}%`
     + (pass ? '' : ` — 너무 빡빡(${(CEIL * 100).toFixed(0)}% 이하 권장), par 를 ${Math.round(best.score * PAR)} 로`)
     + ` · 경비 ${won(best.res.spend)}/${won(q.budget)} · 이동 ${best.res.moveMin}분`);
-  console.log('   ' + q.from + '/' + R.origins[q.from].find(o=>o.id===best.arriveId).name + ' → '
+  const bo = R.origins[q.from].find(o => o.id === best.arriveId);
+  const bt = tripsOf(R, bo).find(t => t.dep === best.dep) || { no: '?', slot: { name: '?' } };
+  console.log('   ' + q.from + '/' + bo.name + ' ' + bt.slot.name + '편(' + bt.no + ') → '
     + best.plan.map(e => poi(e.id).name + '(' + TRANSPORT[e.mode].name + ')').join(' → '));
 }
