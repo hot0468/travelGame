@@ -173,6 +173,30 @@
   .card.on{background:var(--sel);box-shadow:var(--hard),0 0 0 3px rgba(255,111,156,.25)}
   .card.lock{opacity:.45;cursor:not-allowed;filter:grayscale(1)}
   .card.lock:hover{border-color:var(--line)}
+  /* ── 예매 화면 (코레일·항공사 창구를 흉내낸 것) ─────────── */
+  .brand{display:flex;align-items:center;gap:9px;margin:-2px 0 10px;padding:7px 12px;border-radius:12px;
+         border:2.5px solid var(--ink);background:var(--panel2);box-shadow:var(--hard)}
+  .brand .bnm{font-weight:800;font-size:14px;letter-spacing:-.2px}
+  .brand .btag{margin-left:auto;font-size:10.5px;font-weight:800;letter-spacing:2px;color:var(--dim)}
+  .slotbar{display:flex;gap:5px;margin:0 0 11px}
+  .slotbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;
+                  background:var(--panel);border:2.5px solid var(--ink);color:var(--dim);padding:6px 2px;
+                  border-radius:12px;cursor:pointer;font-size:12.5px;font-weight:800;font-family:inherit;
+                  box-shadow:2px 2px 0 rgba(59,50,97,.9);transition:background .12s,color .12s,transform .08s}
+  .slotbar button:hover{background:var(--panel2);color:var(--fg)}
+  .slotbar button.on{background:var(--acc);color:#fff;transform:rotate(-1.2deg)}
+  .slotbar button .pr{font-size:10.5px;font-weight:700;opacity:.85}
+  /* 편 한 줄: 편명 / 출발→도착 / 요금 */
+  .trip{display:flex;align-items:center;gap:12px}
+  .trip .no{flex:0 0 78px;font-size:11.5px;font-weight:800;color:var(--dim)}
+  .trip .tm{font-weight:800;font-size:15px;letter-spacing:-.3px}
+  .trip .tm .ar{color:var(--dim);margin:0 5px;font-weight:700}
+  .trip .fare{margin-left:auto;text-align:right;font-weight:800;font-size:14px;white-space:nowrap}
+  .trip .fare .u{display:block;font-size:11px;font-weight:700;color:var(--dim)}
+  .cheap{color:var(--ok-d)}
+  .booknote{display:flex;gap:7px;align-items:flex-start;font-size:12px;color:var(--dim);
+            margin:2px 0 10px;line-height:1.5}
+  .booknote>.ic{flex:none;margin-top:2px}
   .t{font-weight:600}
   .s{font-size:12px;color:var(--dim)}
   .tabs{display:flex;gap:4px;padding:10px 12px 0}
@@ -426,6 +450,14 @@
     /* 헤더 한 줄이 화면보다 넓어지면 body 가 함께 넓어지고, right:0 으로 붙인 것들이
        그 넓은 폭을 기준 삼아 화면 밖으로 밀린다. 그래서 헤더부터 줄인다. */
     html,body{overflow-x:hidden}
+    /* 예매 한 줄은 편명·시각·요금 셋이 나란히 서야 해서 폭이 빠듯하다 */
+    .trip{gap:8px}
+    .trip .no{flex-basis:62px;font-size:10.5px;white-space:normal;line-height:1.25}
+    .trip .tm{font-size:14px}
+    .trip .fare{font-size:13px}
+    .slotbar{gap:4px}
+    .slotbar button{font-size:12px;padding:5px 1px}
+    .slotbar button .pr{font-size:10px}
     header{gap:8px;padding:8px 10px}
     header h1{font-size:14px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
     .mapctl{display:none}                     /* 확대·축소는 핀치로 */
@@ -550,6 +582,10 @@
   <symbol id="i-battery" viewBox="0 0 24 24"><path d="M 22 14 L 22 10" /> <rect x="2" y="6" width="16" height="12" rx="2" /></symbol>
   <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /> <path d="M13 5v2" /> <path d="M13 17v2" /> <path d="M13 11v2" /></symbol>
   <symbol id="i-percent" viewBox="0 0 24 24"><line x1="19" x2="5" y1="5" y2="19" /> <circle cx="6.5" cy="6.5" r="2.5" /> <circle cx="17.5" cy="17.5" r="2.5" /></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /> <path d="M12 2v2" /> <path d="M12 20v2" /> <path d="m4.93 4.93 1.41 1.41" /> <path d="m17.66 17.66 1.41 1.41" /> <path d="M2 12h2" /> <path d="M20 12h2" /> <path d="m6.34 17.66-1.41 1.41" /> <path d="m19.07 4.93-1.41 1.41" /></symbol>
+  <symbol id="i-sunset" viewBox="0 0 24 24"><path d="M12 10V2" /> <path d="m4.93 10.93 1.41 1.41" /> <path d="M2 18h2" /> <path d="M20 18h2" /> <path d="m19.07 10.93-1.41 1.41" /> <path d="M22 22H2" /> <path d="m16 6-4 4-4-4" /> <path d="M16 18a4 4 0 0 0-8 0" /></symbol>
+  <symbol id="i-fuel" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22" /> <line x1="4" x2="14" y1="9" y2="9" /> <path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" /> <path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" /></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /> <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /> <path d="M12 17.5v-11" /></symbol>
   <symbol id="i-armchair" viewBox="0 0 24 24"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3" /> <path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z" /> <path d="M5 18v2" /> <path d="M19 18v2" /></symbol>
   <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /> <path d="M20 2v4" /> <path d="M22 4h-4" /> <circle cx="4" cy="20" r="2" /></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /> <rect x="2" y="4" width="20" height="16" rx="2" /></symbol>
@@ -665,6 +701,17 @@
   <h3 id="triphd"></h3>
   <p class="s" style="margin:0 0 14px" id="tripsub"></p>
   <div id="tripopts"></div>
+</dialog>
+
+<!-- 교통수단을 고르면 이어지는 예매 창구. 시간대를 골라 편을 끊는다 -->
+<dialog id="book" class="wide">
+  <div class="brand" id="bookbrand"></div>
+  <h3 id="bookhd"></h3>
+  <p class="s" style="margin:0 0 11px" id="booksub"></p>
+  <div class="slotbar" id="bookslots"></div>
+  <div id="booknote"></div>
+  <div id="booklist"></div>
+  <button class="mini wide" data-act="retrip">다른 교통수단 고르기</button>
 </dialog>
 
 <!-- 교통편을 고르면 이어서 묻는 렌터카 대여 여부 -->
@@ -1002,11 +1049,92 @@ const transitText = p => !p ? ''
       ? `${l.lines[0] || '?'}호선 ${l.from}→${l.to}`
       : `버스 ${l.lines.slice(0, 2).join('·')}`).join(' · ');
 
+// ── 도시간 교통편 예매 ───────────────────────────────────────
+// 여행지까지 오는 편은 손님이 직접 끊는다. 시간대는 네 개고, 늦게 떠나는 편일수록 싸다
+// (저녁 < 오후 < 오전 < 새벽). 싼 표의 값은 돈이 아니라 시간이다 — 저녁편을 끊으면
+// 첫날이 통째로 날아가고, 새벽편은 첫날을 다 쓰는 대신 요금을 25% 더 낸다.
+// dep 은 예매편(기차·항공·버스·배)의 출발 시각, drive 는 자차 출발 시각이다.
+// 자차만 새벽 출발을 3시까지 당길 수 있어 톨게이트 심야할인(0~5시)에 걸린다.
+const SLOTS = [
+  { id: 'dawn', name: '새벽', ico: 'moon',    rate: 1.25, dep: [310, 370, 430],    drive: [180, 240, 300] },
+  { id: 'am',   name: '오전', ico: 'sunrise', rate: 1.10, dep: [490, 550, 610],    drive: [450, 510, 570] },
+  { id: 'pm',   name: '오후', ico: 'sun',     rate: 0.95, dep: [790, 850, 910],    drive: [780, 840, 900] },
+  { id: 'eve',  name: '저녁', ico: 'sunset',  rate: 0.80, dep: [1090, 1150, 1210], drive: [1080, 1140, 1200] }
+];
+const LAST_ARRIVE = 1380;      // 23시 넘겨 닿는 편은 팔지 않는다 (그날 일정이 성립하지 않는다)
+const TOLL_NIGHT = 0.5;        // 고속도로 심야할인 — 0~5시 출발이면 통행료 반값
+const FUEL = { kmpl: 12, price: 1700 };   // 연비 12km/L · 휘발유 1,700원/L (지역이 fuel 로 덮어쓸 수 있다)
+// 출발 시각 → 시간대. 자차의 이른 출발까지 같은 칸에 들어가도록 경계를 넉넉히 잡는다.
+const slotOf = dep => SLOTS[dep < 450 ? 0 : dep < 720 ? 1 : dep < 1020 ? 2 : 3];
+// 예매 창구 간판. 데이터가 brand 를 주면 그걸 쓰고, 없으면 아이콘으로 고른다.
+const BRANDS = {
+  'train-front': { nm: '코레일',     sub: '승차권 예매', tag: 'KORAIL' },
+  plane:         { nm: '항공사',     sub: '항공권 예매', tag: 'AIRLINE' },
+  bus:           { nm: '고속버스',   sub: '승차권 예매', tag: 'EXPRESS' },
+  ship:          { nm: '여객선',     sub: '승선권 예매', tag: 'FERRY' },
+  car:           { nm: '자차',       sub: '출발 시각',   tag: 'DRIVE' }
+};
+const brandOf = o => o.brand || BRANDS[o.ico] || { nm: o.name, sub: '예매', tag: 'TICKET' };
+// 편명. 실제 시각표는 아니고 예매 화면처럼 보이라고 붙이는 번호다.
+const TRIP_NO = {
+  'train-front': n => 'KTX ' + (101 + n * 2),
+  plane:         n => ['BX 8802', 'KE 1403', 'OZ 8505', 'LJ 8005', 'TW 991', '7C 501',
+                       'BX 8806', 'KE 1409', 'OZ 8511', 'LJ 8009', 'TW 995', '7C 507'][n % 12],
+  bus:           n => ['프리미엄', '우등', '일반'][n % 3] + '고속',
+  ship:          n => ['뉴스타호', '실버클라우드'][n % 2],
+  car:           () => '자차'
+};
+const tripNo = (o, n) => (TRIP_NO[o.ico] || (i => '제' + (i + 1) + '편'))(n);
+
+// 자차 비용 내역. 요금표가 없으니 주행거리로 기름값을 내고 톨게이트비를 더한다.
+function carBill(R, o, dep) {
+  if (!o.km) return { fuel: o.cost || 0, toll: 0, night: false, km: 0 };
+  const f = R.fuel || FUEL;
+  const fuel = Math.round(o.km / f.kmpl * f.price / 100) * 100;
+  const night = dep != null && dep >= 0 && dep < 300;   // 0~5시 출발 (음수는 전날 출발이라 해당 없다)
+  return { fuel, toll: Math.round((o.toll || 0) * (night ? TOLL_NIGHT : 1) / 100) * 100, night, km: o.km };
+}
+// 1인(자차는 1대) 요금. dep 이 없으면 아직 예매 전이라 데이터의 정가 그대로.
+function fareOf(R, o, dep) {
+  if (o.per === 'car') { const b = carBill(R, o, dep); return b.fuel + b.toll; }
+  return dep == null ? o.cost : Math.round(o.cost * slotOf(dep).rate / 100) * 100;
+}
+// 그 교통수단으로 끊을 수 있는 편 목록. 시간대마다 세 편씩 깔고,
+// 자정 가까이 닿는 편은 뺀다(고속버스 저녁편·여객선 오후편이 이렇게 빠진다).
+// 하루 한두 편뿐이라 정기 시간대에 안 맞는 노선(밤배·야간열차)은 데이터가 deps 로 직접 적는다:
+//   deps: [{ dep, arrive, fare, no }]  — dep 이 음수면 전날 출발이라는 뜻이다.
+// 옵션 객체는 그대로 고정된 데이터라 목록을 한 번 만들어 두고 재사용한다
+// (compute() 마다 다시 만들면 탐색 도구가 수백만 번 다시 굽는다).
+function tripsOf(R, o) {
+  if (o._trips) return o._trips;
+  const out = [];
+  if (o.deps) o.deps.forEach((d, i) => {
+    const arrive = d.arrive != null ? d.arrive : d.dep + o.min;
+    out.push({ slot: slotOf(((d.dep % 1440) + 1440) % 1440), dep: d.dep, arrive, min: arrive - d.dep,
+               no: d.no || tripNo(o, i), fare: d.fare != null ? d.fare : fareOf(R, o, d.dep) });
+    out.at(-1).si = SLOTS.indexOf(out.at(-1).slot);
+  });
+  else SLOTS.forEach((s, si) => (o.per === 'car' ? s.drive : s.dep).forEach((dep, di) => {
+    if (dep + o.min > LAST_ARRIVE) return;
+    out.push({ slot: s, si, dep, arrive: dep + o.min, min: o.min, no: tripNo(o, si * 3 + di), fare: fareOf(R, o, dep) });
+  }));
+  if (!out.length) {                      // 너무 오래 걸려 하루 안에 닿는 편이 없으면 데이터의 기본편이라도 남긴다
+    const dep = Math.max(0, o.arrive - o.min);
+    out.push({ slot: slotOf(dep), si: 0, dep, arrive: o.arrive, min: o.min, no: tripNo(o, 0), fare: fareOf(R, o, dep) });
+  }
+  return (o._trips = out);
+}
+
 // 손님이 고른 도착 교통편. 없으면 그 출발지의 첫 번째.
+// depMin(예매한 편의 출발 시각)이 있으면 그 편의 출발·도착·요금으로 갈아끼운다.
 function arrival(state) {
   const q = state.quest; if (!q) return null;
-  const opts = REGIONS[state.region].origins[q.from] || [];
-  return opts.find(o => o.id === state.arriveId) || opts[0] || null;
+  const R = REGIONS[state.region];
+  const o = (R.origins[q.from] || []).find(x => x.id === state.arriveId) || (R.origins[q.from] || [])[0] || null;
+  if (!o || state.depMin == null) return o;
+  const t = tripsOf(R, o).find(x => x.dep === state.depMin);
+  if (!t) return o;                      // 데이터가 바뀌어 없어진 편 — 정가·기본 도착으로 되돌린다
+  return Object.assign({}, o, { dep: t.dep, arrive: t.arrive, min: t.min, fare: t.fare, no: t.no });
 }
 // 시작지점 = 도착 교통편이 내려주는 곳
 function startPoint(state) {
@@ -1017,10 +1145,13 @@ function startPoint(state) {
 function arrivalCost(state) {
   const a = arrival(state); if (!a) return 0;
   const people = state.quest.people;
-  return a.cost * (a.per === 'car' ? Math.ceil(people / 4) : people);
+  const unit = a.fare != null ? a.fare : fareOf(REGIONS[state.region], a, null);
+  return unit * (a.per === 'car' ? Math.ceil(people / 4) : people);
 }
 
-const hhmm = m => String(Math.floor((m % 1440) / 60)).padStart(2, '0') + ':' + String(Math.round(m % 60)).padStart(2, '0');
+// 전날 밤에 떠나는 밤배는 출발 시각이 음수(전날)라 그대로 나누면 "-2:-30" 이 된다 — 하루 안으로 접는다.
+const hhmm = m => { const t = ((m % 1440) + 1440) % 1440;
+  return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.round(t % 60)).padStart(2, '0'); };
 const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
 
 // 일정 시뮬레이션 → 타임라인 + 비용 + 위반사항
@@ -1170,10 +1301,21 @@ function compute(state) {
     if (cut) bills.push({ day: +d, what: '교통패스 상한', ico: 'ticket', amt: -Math.round(cut) });
   });
   spend = Math.round(spend);
-  const inter = arrivalCost(state) * (state.ret ? 2 : 1);   // 귀가편까지 정하면 왕복 요금
+  const trip = state.ret ? 2 : 1;                           // 귀가편까지 정하면 왕복 요금
+  const inter = arrivalCost(state) * trip;
   spend += inter;
-  if (inter) bills.unshift({ day: 0, what: `${arr ? arr.name : '도착 교통편'}${state.ret ? ' 왕복' : ''}`,
-                             ico: arr ? arr.ico : 'map-pin', amt: Math.round(inter) });
+  const rt = trip > 1 ? ' 왕복' : '';
+  if (arr && arr.per === 'car' && arr.km && !arr.deps) {
+    // 자차는 표값이 없다 — 기름값과 톨게이트비를 따로 적어야 어디로 돈이 나갔는지 보인다.
+    const cars = Math.ceil(people / 4), cb = carBill(R, arr, state.depMin), head = [];
+    const many = cars > 1 ? ` ×${cars}대` : '';
+    if (cb.fuel) head.push({ day: 0, ico: 'fuel', amt: Math.round(cb.fuel * cars * trip),
+                             what: `유류비 ${arr.km}km${many}${rt}` });
+    if (cb.toll) head.push({ day: 0, ico: 'receipt', amt: Math.round(cb.toll * cars * trip),
+                             what: `통행료${cb.night ? ' 심야할인' : ''}${many}${rt}` });
+    bills.unshift(...head);
+  } else if (inter) bills.unshift({ day: 0, what: `${arr ? arr.name : '도착 교통편'}${rt}`,
+                                    ico: arr ? arr.ico : 'map-pin', amt: Math.round(inter) });
 
   // 제약 검사
   if (q) {
@@ -1213,7 +1355,7 @@ function stars(score, par) { return score >= par * 1.25 ? 3 : score >= par ? 2 :
 // 상태
 // ─────────────────────────────────────────────────────────────
 const SAVE = 'travelgame.v1';
-const S = Object.assign({ region: 'busan', quest: null, plan: [], startMin: 540, startId: null, buffs: [], sel: null, pop: null, gu: null, day: 0, arriveId: null, ret: null, wake: {}, tab: 'all', sub: null, xp: 0, cleared: [] },
+const S = Object.assign({ region: 'busan', quest: null, plan: [], startMin: 540, startId: null, buffs: [], sel: null, pop: null, gu: null, day: 0, arriveId: null, depMin: null, ret: null, wake: {}, tab: 'all', sub: null, xp: 0, cleared: [] },
   JSON.parse(localStorage.getItem(SAVE) || '{}'));
 S.plan = S.plan || [];
 
@@ -1263,7 +1405,7 @@ function applyRegion(key) {
   S.region = key;
   S.regionPicked = true;
   S.quest = null; S.plan = []; S.sel = null; S.pop = null; S.day = 0;
-  S.arriveId = null; S.ret = null; S.wake = {}; S.gu = null; S.tab = 'all'; S.sub = null;
+  S.arriveId = null; S.depMin = null; S.ret = null; S.wake = {}; S.gu = null; S.tab = 'all'; S.sub = null;
   $('#region').close();
   save();
   document.title = '여행설계사 · ' + REGIONS[key].name;
@@ -1805,24 +1947,88 @@ function openRent() {
   $('#rentcar').showModal();
 }
 
+// 인원(자차는 대수)을 곱한 총액
+const partyOf = (q, o) => o.per === 'car' ? Math.ceil(q.people / 4) : q.people;
+const durText = m => (m >= 60 ? `${Math.floor(m / 60)}시간 ` : '') + (m % 60 ? `${m % 60}분` : '');
+
 function openTrip() {
   const q = S.quest; if (!q) return;
-  const opts = REGIONS[S.region].origins[q.from] || [];
-  const starts = REGIONS[S.region].starts;
-  $('#triphd').innerHTML = `${ic('map-pin')} ${esc(q.from)}에서 ${esc(REGIONS[S.region].name)}까지, 무엇을 타고 올까요?`;
-  $('#tripsub').textContent = `${REGIONS[S.region].name}까지 오는 비용도 손님 예산에서 나갑니다. 싼 편은 늦게 도착해 첫날이 짧아집니다.`;
+  const R = REGIONS[S.region];
+  const opts = R.origins[q.from] || [], starts = R.starts;
+  $('#triphd').innerHTML = `${ic('map-pin')} ${esc(q.from)}에서 ${esc(R.name)}까지, 무엇을 타고 올까요?`;
+  $('#tripsub').textContent = `${R.name}까지 오는 비용도 손님 예산에서 나갑니다. 수단을 고르면 예매 화면에서 시간대를 정합니다.`;
   $('#tripopts').innerHTML = opts.map(o => {
-    const to = starts.find(x => x.id === o.to);
-    const total = o.cost * (o.per === 'car' ? Math.ceil(q.people / 4) : q.people);
-    const share = Math.round(total / q.budget * 100);
-    return `<div class="card ${o.id === (arrival(S) || {}).id ? 'on' : ''}" data-trip="${o.id}">
-      <div class="t">${ic(o.ico, 'big')} ${esc(o.name)}</div>
+    const to = starts.find(x => x.id === o.to), party = partyOf(q, o);
+    const ts = tripsOf(R, o);
+    const lo = Math.min(...ts.map(t => t.fare)) * party, hi = Math.max(...ts.map(t => t.fare)) * party;
+    const cb = o.per === 'car' ? carBill(R, o, null) : null;
+    const bnm = brandOf(o).nm;
+    return `<div class="card ${o.id === S.arriveId ? 'on' : ''}" data-trip="${o.id}">
+      <div class="t">${ic(o.ico, 'big')} ${esc(o.name)}${bnm === o.name ? '' : ` <span class="s">${esc(bnm)}</span>`}</div>
       <div class="s" style="margin-top:5px">
-        ${esc(to.name)} ${hhmm(o.arrive)} 도착 · 소요 ${Math.floor(o.min / 60)}시간 ${o.min % 60}분</div>
-      <div class="s">${won(total)} · 예산의 ${share}%${o.per === 'car' ? ' · 여행 중 렌터카비 없음' : ` (${won(o.cost)} × ${q.people}인)`}</div>
+        ${esc(to.name)}까지 ${durText(o.min)} · ${hhmm(ts[0].arrive)}~${hhmm(ts.at(-1).arrive)} 도착편 ${ts.length}편</div>
+      <div class="s">${lo === hi ? won(lo) : `${won(lo)} ~ ${won(hi)}`} · 예산의 ${Math.round(lo / q.budget * 100)}~${Math.round(hi / q.budget * 100)}%${
+        cb ? ` (유류비 ${won(cb.fuel)} + 통행료 ${won(cb.toll)}${party > 1 ? ` × ${party}대` : ''}) · 여행 중 렌터카비 없음`
+           : ` (1인 ${won(Math.min(...ts.map(t => t.fare)))}~${won(Math.max(...ts.map(t => t.fare)))} × ${q.people}인)`}</div>
     </div>`;
   }).join('');
   $('#trip').showModal();
+}
+
+// ── 예매 화면 ────────────────────────────────────────────────
+// 지금 보고 있는 시간대 탭. 창을 다시 열면 이미 끊은 편의 시간대로 맞춘다.
+let bookSlot = 0;
+function openBook() {
+  const q = S.quest, R = REGIONS[S.region];
+  const o = (R.origins[q.from] || []).find(x => x.id === S.arriveId);
+  if (!q || !o) { openTrip(); return; }
+  const ts = tripsOf(R, o);
+  const cur = S.depMin != null && ts.find(t => t.dep === S.depMin);
+  bookSlot = cur ? cur.si : ts[0].si;
+  renderBook();
+  if (!$('#book').open) $('#book').showModal();
+}
+function renderBook() {
+  const q = S.quest, R = REGIONS[S.region];
+  const o = (R.origins[q.from] || []).find(x => x.id === S.arriveId);
+  if (!q || !o) return;
+  const b = brandOf(o), party = partyOf(q, o), ts = tripsOf(R, o);
+  const to = R.starts.find(x => x.id === o.to);
+  const isCar = o.per === 'car';
+  $('#bookbrand').innerHTML = `${ic(o.ico, 'big')}<span class="bnm">${esc(b.nm)}</span>
+    <span class="s">${esc(b.sub)}</span><span class="btag">${esc(b.tag)}</span>`;
+  $('#bookhd').innerHTML = `${esc(q.from)} ${ic('arrow-right')} ${esc(to.name)}`;
+  $('#booksub').textContent = `${q.people}인${isCar ? ` · 차 ${party}대` : ''} · 편도 ${durText(o.min)}`
+    + ` · ${dowName(R, q.startDow)}요일 출발`;
+  // 시간대 탭. 편이 하나도 없는 시간대는 눌리지 않게 둔다(자정 넘겨 닿는 편은 팔지 않는다).
+  $('#bookslots').innerHTML = SLOTS.map((s, i) => {
+    // 값은 그 시간대에 실제로 있는 편에서 뽑는다 — 손으로 적어 둔 편(deps)은 배수를 안 따른다.
+    const inSlot = ts.filter(t => t.si === i);
+    return `<button data-slot="${i}" class="${i === bookSlot ? 'on' : ''}" ${inSlot.length ? '' : 'disabled'}>
+      ${ic(s.ico)} ${s.name}<span class="pr">${inSlot.length
+        ? won(Math.min(...inSlot.map(t => t.fare)) * party) : '편성 없음'}</span></button>`;
+  }).join('');
+  $('#booknote').innerHTML = `<div class="booknote">${ic(isCar ? 'fuel' : 'ticket')}<span>${isCar
+    ? `유류비는 ${o.km}km ÷ ${(R.fuel || FUEL).kmpl}km/L × ${won((R.fuel || FUEL).price)}/L 로 계산합니다. `
+      + `통행료는 편도 ${won(o.toll || 0)}이고 <b>0시~5시 출발이면 심야할인 50%</b>가 붙습니다.`
+    : o.deps ? '하루 몇 편 없는 노선이라 시간대를 골라 끊는 대신 있는 편에 맞춰야 합니다.'
+    : '늦게 떠나는 편일수록 쌉니다(저녁 &lt; 오후 &lt; 오전 &lt; 새벽). '
+      + '대신 늦게 도착한 만큼 첫날 일정이 짧아집니다.'}</span></div>`;
+  $('#booklist').innerHTML = ts.filter(t => t.si === bookSlot).map(t => {
+    const total = t.fare * party, cb = isCar ? carBill(R, o, t.dep) : null;
+    return `<div class="card ${t.dep === S.depMin ? 'on' : ''}" data-book="${t.dep}">
+      <div class="trip">
+        <span class="no">${esc(t.no)}</span>
+        <span class="tm">${hhmm(t.dep)}<span class="ar">${ic('arrow-right')}</span>${hhmm(t.arrive)}</span>
+        <span class="fare">${won(total)}<span class="u">예산의 ${Math.round(total / q.budget * 100)}%</span></span>
+      </div>
+      <div class="s" style="margin-top:5px">${cb
+        ? `${ic('fuel')} 유류비 ${won(cb.fuel * party)} + ${ic('receipt')} 통행료 ${won(cb.toll * party)}`
+          + (cb.night ? ` <b class="cheap">심야할인</b>` : '')
+        : `${esc(q.from)} ${hhmm(t.dep)} 출발 · ${esc(to.name)} ${hhmm(t.arrive)} 도착`
+          + ` · 1인 ${won(t.fare)}`}</div>
+    </div>`;
+  }).join('');
 }
 
 // 손님 반응 ---------------------------------------------------
@@ -2018,7 +2224,7 @@ function renderPlan(res) {
   const box = $('#plan');
   if (!S.quest) { box.innerHTML = `<div class="empty">왼쪽에서 의뢰를 먼저 선택하세요.</div>`; $('#editpop').hidden = true; return; }
 
-  const arr = arrival(S);
+  const arr = arrival(S), bk = arr && arr.dep != null ? arr : null;   // dep 이 있으면 예매를 마친 편이다
   // 일차 탭 — 여러 날을 세로로 이어붙이면 스크롤이 길어져서 하루씩 본다
   const days = S.quest.days;
   if (S.day >= days) S.day = days - 1;
@@ -2033,8 +2239,10 @@ function renderPlan(res) {
   const st = res.dayStat[S.day];
   const T = REGIONS[S.region].staminaTypes[res.type];
   $('#stambar').innerHTML = st ? `<div class="wakerow" style="margin-top:0">${S.day === 0
-      ? `<span class="s">${ic(arr ? arr.ico : 'map-pin')} ${hhmm(wakeOf(0))} ${esc(REGIONS[S.region].name)} 도착</span>
-         <button class="mini" data-act="trip">교통편 변경</button>`
+      ? `<span class="s">${ic(arr ? arr.ico : 'map-pin')} ${bk
+            ? `${esc(bk.no)} · ${hhmm(bk.dep)} 출발 → ${hhmm(bk.arrive)} 도착`
+            : `${hhmm(wakeOf(0))} ${esc(REGIONS[S.region].name)} 도착`}</span>
+         <button class="mini" data-act="book">${bk ? '예매 변경' : '예매하기'}</button>`
       : `<span class="s">${ic('sunrise')} 체크아웃</span>
          <select data-wake="${S.day}">${[...Array(15)].map((_, i) => {
            const m = 300 + i * 30;
@@ -2076,8 +2284,9 @@ function renderPlan(res) {
 
     // 손님이 사는 곳에서 출발하는 것부터가 일정이다
     if (d === 0 && arr) html += blk('arrive', 0, arr.min, -1,
-      `${ic(arr.ico)} ${esc(S.quest.from)} 출발`, `${arr.name} · ${won(arrivalCost(S))}`,
-      `${S.quest.from} → ${startPoint(S).name} (${arr.name}) ${hhmm(arr.arrive)} 도착`);
+      `${ic(arr.ico)} ${esc(S.quest.from)} ${hhmm(arr.dep != null ? arr.dep : arr.arrive - arr.min)} 출발`,
+      `${bk ? bk.no : arr.name} · ${won(arrivalCost(S))}`,
+      `${S.quest.from} → ${startPoint(S).name} (${bk ? bk.no : arr.name}) ${hhmm(arr.arrive)} 도착`);
     if (!rows.length) html += `<div class="tlhint" style="top:${y(t0) + 16}px">지도에서 장소를 골라 이 날에 추가하세요</div>`;
 
     // 시각 눈금 (정시는 실선+라벨, 30분은 점선)
@@ -2363,8 +2572,13 @@ document.addEventListener('click', ev => {
   const bf = near('[data-buff]');
   if (bf) { S.buffs.push(bf.dataset.buff); pendingPick = false; save(); $('#buff').close(); render(); return; }
 
+  // 수단을 고르면 그 회사 예매 화면으로 넘어간다 — 시간대는 거기서 정한다
   const tr = near('[data-trip]');
-  if (tr) { S.arriveId = tr.dataset.trip; $('#trip').close(); render(); openRent(); return; }
+  if (tr) { S.arriveId = tr.dataset.trip; S.depMin = null; $('#trip').close(); openBook(); return; }
+  const sl = near('[data-slot]');
+  if (sl) { bookSlot = +sl.dataset.slot; renderBook(); return; }
+  const bk = near('[data-book]');
+  if (bk) { S.depMin = +bk.dataset.book; $('#book').close(); render(); openRent(); return; }
   const rc = near('[data-rent]');
   if (rc) { S.defMode = rc.dataset.rent === 'yes' ? 'car' : 'bus'; $('#rentcar').close(); render(); return; }
 
@@ -2372,7 +2586,7 @@ document.addEventListener('click', ev => {
   if (q) {
     const quest = REGIONS[S.region].quests.find(x => x.id === q.dataset.quest);
     if (quest.lv <= level()) {
-      S.quest = quest; S.plan = []; S.sel = null; S.day = 0; S.arriveId = null; S.ret = null; S.wake = {}; S.pop = null; S.defMode = null;
+      S.quest = quest; S.plan = []; S.sel = null; S.day = 0; S.arriveId = null; S.depMin = null; S.ret = null; S.wake = {}; S.pop = null; S.defMode = null;
       $('#pick').close(); render(); openLetter(quest);   // 편지를 닫으면 교통편 선택으로 이어진다
     }
     return;
@@ -2384,6 +2598,8 @@ document.addEventListener('click', ev => {
     if (a === 'pick') $('#pick').showModal();
     else if (a === 'region') { renderRegions(); $('#region').showModal(); }
     else if (a === 'trip') openTrip();
+    else if (a === 'book') openBook();
+    else if (a === 'retrip') { $('#book').close(); openTrip(); }
     else if (a === 'closepop') closePoi();
     else if (a === 'closegu') { S.gu = null; render(); }
     else if (a === 'closebuff') $('#buffpop').hidden = true;
@@ -2699,6 +2915,8 @@ $('#rentcar').addEventListener('close', () => { if (!S.defMode) { S.defMode = 'b
 // 아직 의뢰를 안 골랐으면 Esc 로 닫지 못하게 (닫아봐야 할 게 없다)
 $('#pick').addEventListener('cancel', e => { if (!S.quest) e.preventDefault(); });
 $('#trip').addEventListener('cancel', e => { if (!S.arriveId) e.preventDefault(); });
+// 예매를 마치기 전에는 닫지 못한다 — 출발 시각이 없으면 첫날이 언제 시작하는지 정해지지 않는다.
+$('#book').addEventListener('cancel', e => { if (S.depMin == null) e.preventDefault(); });
 $('#buff').addEventListener('cancel', e => e.preventDefault());
 
 // 시작
@@ -2776,6 +2994,51 @@ if (location.search.includes('test')) {
   const carPlan = { region: 'busan', quest: R.quests[0], plan: [{ id: 'haeundae', mode: 'car', stay: 90 }] };
   const own = compute({ ...carPlan, arriveId: 'car' }), rent = compute({ ...carPlan, arriveId: 'ktx' });
   ok(rent.spend - own.spend > 0 && !own.bad.some(m => m.includes('렌터카')), '자차 도착 시 렌터카 일 대여료 면제');
+
+  // ── 도시간 교통편 예매 ──────────────────────────────────
+  const ktx = R.origins['서울'].find(o => o.id === 'ktx');
+  const ktxT = tripsOf(R, ktx);
+  ok(SLOTS.length === 4, `예매 시간대 4개 (${SLOTS.map(s => s.name).join('·')})`);
+  // 저녁이 가장 싸고 오후·오전·새벽 순으로 비싸진다
+  const fares = SLOTS.map(s => fareOf(R, ktx, s.dep[0]));
+  ok(fares[0] > fares[1] && fares[1] > fares[2] && fares[2] > fares[3],
+     `요금 새벽>오전>오후>저녁 (${fares.map(won).join(' > ')})`);
+  ok(ktxT.every(t => t.arrive <= LAST_ARRIVE), '자정 가까이 닿는 편은 팔지 않는다');
+  const busT = tripsOf(R, R.origins['서울'].find(o => o.id === 'bus'));
+  ok(busT.length < 12, `4시간 20분 걸리는 고속버스는 늦은 편이 빠진다 (${busT.length}편)`);
+  // 예매하면 그 편의 출발 시각이 첫날 시작 시각이 된다
+  const bookAt = dep => compute({ region: 'busan', quest: R.quests[0], arriveId: 'ktx', depMin: dep,
+                                  plan: [{ id: 'haeundae', mode: 'bus', stay: 90 }] });
+  const dawn = bookAt(SLOTS[0].dep[0]), eve = bookAt(SLOTS[3].dep[0]);
+  ok(dawn.rows[0].begin < eve.rows[0].begin, `새벽편이 저녁편보다 일찍 시작 (${hhmm(dawn.rows[0].begin)} < ${hhmm(eve.rows[0].begin)})`);
+  ok(dawn.spend > eve.spend, `새벽편이 저녁편보다 비쌈 (${won(dawn.spend)} > ${won(eve.spend)})`);
+  ok(arrival({ region: 'busan', quest: R.quests[0], arriveId: 'ktx', depMin: 310 }).arrive === 310 + ktx.min,
+     '도착 시각 = 출발 시각 + 소요시간');
+  // 예매 전에는 데이터의 기본편 그대로 (하위호환 — 도구 스크립트는 depMin 없이 계산한다)
+  ok(arrival({ region: 'busan', quest: R.quests[0], arriveId: 'ktx' }).arrive === ktx.arrive, '예매 전에는 데이터 기본편');
+
+  // 밤배처럼 정기 시간대에 안 맞는 노선은 데이터의 deps 를 그대로 판다
+  const ship = R.origins['제주'].find(o => o.id === 'ship'), shipT = tripsOf(R, ship);
+  ok(shipT.length === ship.deps.length && shipT[0].dep === ship.deps[0].dep, `여객선은 적어 둔 편만 (${shipT.length}편)`);
+  ok(shipT[0].fare === ship.deps[0].fare, '적어 둔 편은 시간대 배수 없이 그 요금 그대로');
+  ok(hhmm(-210) === '20:30', `전날 출발도 시각으로 읽힌다 (${hhmm(-210)})`);
+  ok(arrival({ region: 'busan', quest: R.quests[4], arriveId: 'ship', depMin: -210 }).min === 690,
+     '밤배는 편마다 적힌 소요시간을 쓴다');
+
+  // 자차: 유류비 + 고속도로 통행료. 0~5시 출발이면 통행료 심야할인.
+  const car = R.origins['서울'].find(o => o.id === 'car');
+  const cb = carBill(R, car, 600), cbn = carBill(R, car, 240);
+  ok(cb.fuel === Math.round(car.km / R.fuel.kmpl * R.fuel.price / 100) * 100, `유류비 ${won(cb.fuel)} (${car.km}km)`);
+  ok(cb.toll === car.toll, `통행료 ${won(cb.toll)}`);
+  ok(cbn.night && cbn.toll < cb.toll, `심야 출발 통행료 할인 (${won(cb.toll)} → ${won(cbn.toll)})`);
+  ok(fareOf(R, car, 600) === cb.fuel + cb.toll, '자차 비용 = 유류비 + 통행료');
+  const drive = compute({ region: 'busan', quest: R.quests[0], arriveId: 'car', depMin: 600,
+                          plan: [{ id: 'haeundae', mode: 'car', stay: 90 }] });
+  ok(drive.bills.some(b => b.what.includes('유류비')) && drive.bills.some(b => b.what.includes('통행료')),
+     '경비 내역에 유류비·통행료가 따로 잡힌다');
+  ok(compute({ region: 'busan', quest: R.quests[0], arriveId: 'car', depMin: 240, plan: [] }).spend
+     < compute({ region: 'busan', quest: R.quests[0], arriveId: 'car', depMin: 600, plan: [] }).spend,
+     '심야 출발이 통행료만큼 싸다');
 
   // 영업시간 위반 감지: 감천문화마을(~18:00 마감)에 23시 도착하도록 출발을 늦춤
   const late = compute({ region: 'busan', quest: R.quests[1], plan: [{ id: 'jagalchi', mode: 'bus', stay: 700 }, { id: 'gamcheon', mode: 'bus', stay: 120 }] });

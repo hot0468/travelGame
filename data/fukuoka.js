@@ -63,19 +63,22 @@ REGIONS.fukuoka = {
   // 한국에서 가는 교통편. 요금은 왕복 아닌 편도 기준(엔진이 왕복으로 계산한다).
   origins: {
     '서울': [
-      { id: 'air', name: '항공', ico: 'plane', to: 'fukair', cost: 180000, per: 'person',
+      // 오후편을 따로 두지 않는다 — 예매 화면의 시간대(새벽·오전·오후·저녁)가 그 자리를 대신한다.
+      // 정가 16만이면 오전편 17.6만 / 오후편 15.2만으로, 예전에 손으로 나눠 두었던 두 편과 같아진다.
+      { id: 'air', name: '항공', ico: 'plane', to: 'fukair', cost: 160000, per: 'person',
         arrive: 620, min: 95, drain: .12 },
-      { id: 'air_late', name: '항공(오후)', ico: 'plane', to: 'fukair', cost: 145000, per: 'person',
-        arrive: 840, min: 95, drain: .12 },
     ],
     '부산': [
       // 부산~하카타 크루즈선(카멜리아라인). 고속선(비틀·코비)은 운항 종료로 뺐다.
-      // 밤배로 가서 아침에 내리므로 도착이 항공보다 이르고, 자면서 가니 덜 지친다.
-      // min 은 귀가에 쓰는 낮배 기준(12:30→18:00). 갈 때 시간은 arrive 가 대신 말해 준다.
-      // 부산~후쿠오카는 LCC 가 편도 5~10만 선이다. 15만으로 두면 2인 왕복이
-      // f1 예산(70만)의 86%를 먹어 여행이 성립하지 않는다.
+      // 하루 두 편뿐이라 예매 시간대(새벽·오전·오후·저녁)에 안 맞는다 — deps 로 편을 직접 적는다.
+      // 밤배는 전날 22:30 에 떠(dep 이 음수) 자면서 가니 아침에 내리고 덜 지친다. 낮배는 12:30→18:00.
+      // 밤배가 선실값만큼 비싸다 — 안 그러면 일찍 닿는 편이 싸기까지 해 낮배를 아무도 안 탄다.
+      // min 은 귀가(낮배)에 쓰는 값이다. 부산~후쿠오카는 LCC 가 편도 5~10만 선이라
+      // 배가 그보다 비싸면 f1 예산(70만)으로 2인 왕복이 성립하지 않는다.
       { id: 'ferry', name: '크루즈선', ico: 'ship', to: 'hakataport', cost: 90000, per: 'person',
-        arrive: 450, min: 330, drain: .12 },
+        arrive: 450, min: 330, drain: .12,
+        deps: [{ dep: -90, arrive: 360, fare: 99000, no: '뉴카멜리아 (밤배)' },
+               { dep: 750, arrive: 1080, fare: 85000, no: '뉴카멜리아 (낮배)' }] },
       { id: 'air', name: '항공', ico: 'plane', to: 'fukair', cost: 85000, per: 'person',
         arrive: 615, min: 55, drain: .09 },
     ],
@@ -180,20 +183,20 @@ REGIONS.fukuoka = {
       desc: '부산에서 배 타고 갑니다. 라멘만 먹어도 좋아요.',
       days: 2, budget: 700000, people: 2, stamina: 110, staminaType: 'energizer',
       // 고속선 폐지로 크루즈선 왕복(밤배+낮배 5.5h)이 이동시간을 크게 먹는다 — par 도 같이 내렸다
-      age: '20대', startDow: 4, must: ['ichiran'], minSights: 2, endBy: 1260, par: 236 },
+      age: '20대', startDow: 4, must: ['ichiran'], minSights: 2, endBy: 1260, par: 254 },
     { id: 'f2', lv: 2, title: '부모님과 다자이후', from: '서울',
       desc: '부모님 모시고 갑니다. 너무 많이 걷지 않았으면 해요.',
       days: 2, budget: 1200000, people: 3, stamina: 90, staminaType: 'morning',
-      age: '60대 이상', startDow: 1, must: ['dazaifu'], minSights: 3, endBy: 1200, par: 203 },
+      age: '60대 이상', startDow: 1, must: ['dazaifu'], minSights: 3, endBy: 1200, par: 177 },
     { id: 'f3', lv: 3, title: '아이랑 셋이서', from: '서울',
       desc: '아이가 동물을 좋아해요. 뛰어놀 데가 있으면 좋겠습니다.',
       days: 3, budget: 1800000, people: 4, stamina: 100, staminaType: 'motionsick',
-      age: '아이 동반', startDow: 5, must: ['zoo'], minSights: 4, endBy: 1230, par: 208 },
+      age: '아이 동반', startDow: 5, must: ['zoo'], minSights: 4, endBy: 1230, par: 296 },
     { id: 'f4', lv: 3, title: '부모님과 유후인 온천', from: '서울',
       desc: '부모님 모시고 갑니다. 유후인 온천 료칸에서 하루 묵고 싶어요. 무리한 일정은 안 돼요.',
       // 2박 3일 — 유후인 왕복이 5시간이라 1박으로는 점수가 음수까지 눌린다(상한 -124 실측).
       days: 3, budget: 2600000, people: 3, stamina: 85, staminaType: 'morning',
       age: '60대 이상', startDow: 1, must: ['kinrinko', 'yu_ryokan'], minSights: 4,
-      minStayTier: 'hotel', endBy: 1230, par: 295 },
+      minStayTier: 'hotel', endBy: 1230, par: 326 },
   ],
 };

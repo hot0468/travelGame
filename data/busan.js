@@ -81,10 +81,16 @@ REGIONS.busan = {
     motionsick: { name: '심한 멀미',  ico: 'waves',   desc: '이동할 때 체력 소모가 2배' }
   },
 
-  // 손님이 사는 곳에서 부산까지 오는 교통편.
+  // 자차 유류비 계산 기준. 유류비 = 주행거리(km) ÷ kmpl × price (편도, 차 1대당).
+  // 통행료는 각 자차 교통편의 toll 이고, 0~5시 출발이면 심야할인 50%가 붙는다.
+  fuel: { kmpl: 12, price: 1700 },   // 연비 12km/L · 휘발유 1,700원/L
+
+  // 손님이 사는 곳에서 부산까지 오는 교통편. 수단만 여기 두고,
+  // 몇 시 편을 끊을지는 예매 화면에서 정한다(index.html 의 SLOTS).
   //   to     : 도착하는 시작지점 id
-  //   cost   : 편도 요금. per:'person' 은 1인당, per:'car' 는 차 1대(4인)당 유류비·통행료
-  //   arrive : 부산 도착 시각(분). 1일차는 이 시각부터 시작한다 — 싼 편일수록 늦게 도착.
+  //   cost   : 편도 정가(1인). 실제로 내는 값은 예매한 시간대에 따라 새벽 1.25배 … 저녁 0.8배.
+  //   km/toll: per:'car' 전용. 요금표 대신 주행거리와 통행료로 값을 매긴다(cost 는 쓰지 않는다).
+  //   arrive : 예매 전에 쓰는 기본 도착 시각(분). 예매하면 출발 시각 + min 이 대신한다.
   //   min    : 소요 시간(분). 타임라인 1일차 맨 앞에 이동 구간으로 그린다.
   // per:'car' 를 고르면 차를 몰고 오므로 여행 중 렌터카 일 대여료가 들지 않는다.
   origins: {
@@ -92,21 +98,26 @@ REGIONS.busan = {
       { id: 'ktx', drain: 0.06,  name: 'KTX',      ico: 'train-front', to: 'busanstn', cost: 59800, per: 'person', arrive: 545, min: 165 },
       { id: 'air', drain: 0.1,  name: '항공',      ico: 'plane',       to: 'gimhae',   cost: 79000, per: 'person', arrive: 530, min: 110 },
       { id: 'bus', drain: 0.11,  name: '고속버스',   ico: 'bus',         to: 'nopo',     cost: 27000, per: 'person', arrive: 650, min: 260 },
-      { id: 'car', drain: 0.16,  name: '자차',      ico: 'car',         to: 'busanstn', cost: 52000, per: 'car',    arrive: 630, min: 300 }
+      // 경부고속도로 396km · 승용차 통행료 20,100원
+      { id: 'car', drain: 0.16,  name: '자차',      ico: 'car',         to: 'busanstn', km: 396, toll: 20100, per: 'car',    arrive: 630, min: 300 }
     ],
     '대구': [
       { id: 'ktx', drain: 0.06,  name: 'KTX',      ico: 'train-front', to: 'busanstn', cost: 17100, per: 'person', arrive: 520, min: 50 },
       { id: 'bus', drain: 0.11,  name: '고속버스',   ico: 'bus',         to: 'nopo',     cost: 9500,  per: 'person', arrive: 580, min: 100 },
-      { id: 'car', drain: 0.16,  name: '자차',      ico: 'car',         to: 'busanstn', cost: 22000, per: 'car',    arrive: 570, min: 110 }
+      { id: 'car', drain: 0.16,  name: '자차',      ico: 'car',         to: 'busanstn', km: 95, toll: 4900, per: 'car',    arrive: 570, min: 110 }
     ],
     '광주': [
       { id: 'ktx', drain: 0.06,  name: 'KTX',      ico: 'train-front', to: 'busanstn', cost: 40000, per: 'person', arrive: 600, min: 195 },
       { id: 'bus', drain: 0.11,  name: '고속버스',   ico: 'bus',         to: 'nopo',     cost: 26000, per: 'person', arrive: 630, min: 240 },
-      { id: 'car', drain: 0.16,  name: '자차',      ico: 'car',         to: 'busanstn', cost: 45000, per: 'car',    arrive: 620, min: 230 }
+      // 남해고속도로 240km · 승용차 통행료 13,000원
+      { id: 'car', drain: 0.16,  name: '자차',      ico: 'car',         to: 'busanstn', km: 240, toll: 13000, per: 'car',    arrive: 620, min: 230 }
     ],
     '제주': [
       { id: 'air', drain: 0.1,  name: '항공',      ico: 'plane',       to: 'gimhae',   cost: 62000, per: 'person', arrive: 540, min: 60 },
-      { id: 'ship', drain: 0.09, name: '여객선',    ico: 'ship',        to: 'port',     cost: 38000, per: 'person', arrive: 480, min: 690 }
+      // 제주~부산 항로는 하루 한 편뿐인 밤배라 예매 시간대에 안 맞는다 — 편을 직접 적는다.
+      // 전날 20:30 에 떠(dep 음수) 자면서 가고 08:00 에 부산항에 닿는다.
+      { id: 'ship', drain: 0.09, name: '여객선',    ico: 'ship',        to: 'port',     cost: 38000, per: 'person', arrive: 480, min: 690,
+        deps: [{ dep: -210, arrive: 480, fare: 38000, no: '오렌지호 (밤배)' }] }
     ]
   },
 
@@ -343,20 +354,20 @@ REGIONS.busan = {
       id: 'q1', lv: 1, title: '첫 손님 · 바다가 보고 싶어요',
       from: '서울', stamina: 110, staminaType: 'energizer', age: '20대', startDow: 4,
       desc: '서울에서 갑니다. 부산 처음이에요. 바다만 보면 돼요.',
-      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, endBy: 1260, par: 290
+      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, endBy: 1260, par: 340
     },
     {
       id: 'q2', lv: 1, title: '뚜벅이 커플 · 알뜰하게',
       from: '대구', stamina: 100, staminaType: 'morning', age: '30대', startDow: 5,
       desc: '대구에서 갑니다. 부산에선 대중교통만 탈게요. 감천이랑 자갈치는 꼭이요!',
       days: 2, budget: 240000, people: 2, must: ['gamcheon', 'jagalchi'], minSights: 4,
-      banModes: ['taxi', 'car'], endBy: 1200, par: 391
+      banModes: ['taxi', 'car'], endBy: 1200, par: 450
     },
     {
       id: 'q3', lv: 2, title: '당일치기 출장 뒤풀이',
       from: '대구', stamina: 95, staminaType: 'night', age: '40대', startDow: 2,
       desc: '대구에서 아침에 출발해 당일로 다녀옵니다. 용궁사는 꼭 보고 싶어요. 셋이서 갑니다.',
-      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, endBy: 1380, par: 331
+      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, endBy: 1380, par: 335
     },
     {
       id: 'q4', lv: 3, title: '부모님 효도여행',
@@ -366,14 +377,14 @@ REGIONS.busan = {
       // 문제가 안 됐지만, 초과를 실패로 바꾼 뒤로는 풀리지 않는 의뢰가 된다. 광주 KTX 4인 왕복
       // 20만 + 호텔 2박 2객실 + 4인 식사 3일 기준으로 170만이 실제 하한선에 가깝다.
       days: 3, budget: 1700000, people: 4, must: ['taejongdae', 'beomeosa'], minSights: 5,
-      minStayTier: 'hotel', endBy: 1140, par: 437
+      minStayTier: 'hotel', endBy: 1140, par: 392
     },
     {
       id: 'q5', lv: 4, title: '아이 둘 데리고 가는 가족',
       from: '제주', stamina: 90, staminaType: 'morning', age: '아이 동반', startDow: 4,
       desc: '제주에서 아이 둘 데리고 갑니다. 롯데월드는 필수! 이동은 편했으면 해요.',
       // 같은 이유로 상향 — 제주 항공 4인 왕복에 롯데월드·아쿠아리움 4인 입장까지 얹으면 120만으로는 안 된다.
-      days: 3, budget: 1600000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, endBy: 1200, par: 452
+      days: 3, budget: 1600000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, endBy: 1200, par: 402
     },
     {
       // 2인이라 객실이 1개뿐이라 최고급 호텔이 예산에 들어온다 — 다른 의뢰는 4인이라 2객실이 되어 불가능하다.
@@ -381,7 +392,7 @@ REGIONS.busan = {
       from: '서울', stamina: 95, staminaType: 'night', age: '30대', startDow: 3,
       desc: '서울에서 둘이 갑니다. 결혼 10주년이라 숙소만큼은 최고로 하고 싶어요. 예산은 넉넉합니다.',
       days: 3, budget: 2500000, people: 2, must: ['xthesky'], minSights: 4,
-      minStayTier: 'hotel', endBy: 1260, par: 637
+      minStayTier: 'hotel', endBy: 1260, par: 588
     }
   ]
 };
