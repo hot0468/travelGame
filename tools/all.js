@@ -5,7 +5,7 @@ const path = require('path');
 
 // --quick: balance(80초) 제외. 반복 수정 중엔 이걸로 돌리고, 커밋 전엔 반드시 풀로.
 const quick = process.argv.includes('--quick');
-const suites = ['selftest', 'stamtest', 'bufftest', 'subtest', 'dowtest', 'rettest', 'daytest', 'ruletest', 'subwaytest', 'transittest', 'pairtest', ...(quick ? [] : ['balance'])];
+const suites = ['selftest', 'stamtest', 'bufftest', 'subtest', 'dowtest', 'rettest', 'daytest', 'ruletest', 'subwaytest', 'transittest', 'lugtest', 'pairtest', ...(quick ? [] : ['balance'])];
 let fails = 0;
 
 for (const name of suites) {

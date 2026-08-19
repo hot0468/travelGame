@@ -26,7 +26,7 @@ const REGION = process.argv.slice(2).find(a => !a.startsWith('-')) || 'busan';
 });
 if (!REGIONS[REGION]) { console.error(REGION + ' 지역을 못 찾았다'); process.exit(1); }
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
-eval(html.slice(html.indexOf('const DETOUR'), html.indexOf('// 상태')) + ';global.TRANSPORT=TRANSPORT;global.TIER_RANK=TIER_RANK;global.arrival=arrival;global.arrivalCost=arrivalCost;global.BUFFS=BUFFS;global.tripsOf=tripsOf;');
+eval(html.slice(html.indexOf('const DETOUR'), html.indexOf('// 상태')) + ';global.LUG=LUG;global.LUGGAGE=LUGGAGE;global.lugFactor=lugFactor;global.TRANSPORT=TRANSPORT;global.TIER_RANK=TIER_RANK;global.arrival=arrival;global.arrivalCost=arrivalCost;global.BUFFS=BUFFS;global.tripsOf=tripsOf;');
 global.S = { region: REGION };
 global.poi = id => REGIONS[REGION].pois.find(p => p.id === id);
 
@@ -41,7 +41,10 @@ const ONLY = process.env.QUEST;   // QUEST=q4 로 한 의뢰만 길게 돌려 �
 for (const q of R.quests) {
   if (ONLY && q.id !== ONLY) continue;
   const pool = R.pois;   // 장소는 레벨 제한 없이 전부 열려 있다
-  const sights = pool.filter(p => p.type === 'sight' && !q.must.includes(p.id));
+  // 짐 보관소는 관광지가 아니다. 관광 후보에서 빼고 따로 다룬다 —
+  // 짐이 있으면 초반에 하나 끼워 넣어 그 뒤 이동을 가볍게 만든다.
+  const sights = pool.filter(p => p.type === 'sight' && p.sub !== 'locker' && !q.must.includes(p.id));
+  const lockers = pool.filter(p => p.sub === 'locker');
   const foods = pool.filter(p => p.type === 'food');
   let stayPool = pool.filter(p => p.type === 'stay');
   if (q.minStayTier) stayPool = stayPool.filter(p => TIER_RANK[p.tier] >= TIER_RANK[q.minStayTier]);
@@ -126,8 +129,17 @@ for (const q of R.quests) {
       (_, d) => mustStay[d] || stayPool[Math.random() * stayPool.length | 0]);
     const per = Math.ceil(all.length / q.days);
     const plan = [];
+    // 짐이 무거우면 첫날 앞쪽에 보관소를 끼워 본다. 절반쯤만 시도해 양쪽을 다 재게 한다 —
+    // 맡기는 값(요금·시간)이 아끼는 체력보다 클 수도 있어서다.
+    const wantLocker = lockers.length && (LUG(q).drain > 1) && Math.random() < .5;
     for (let d = 0; d < q.days; d++) {
-      plan.push(...all.slice(d * per, (d + 1) * per).map(p => ({ id: p.id, mode: modes[Math.random() * modes.length | 0], stay: p.stay })));
+      const dayPlan = all.slice(d * per, (d + 1) * per)
+        .map(p => ({ id: p.id, mode: modes[Math.random() * modes.length | 0], stay: p.stay }));
+      if (d === 0 && wantLocker) {
+        const lk = lockers[Math.random() * lockers.length | 0];
+        dayPlan.unshift({ id: lk.id, mode: modes[Math.random() * modes.length | 0], stay: lk.stay });
+      }
+      plan.push(...dayPlan);
       if (d < q.days - 1 && stays[d]) plan.push({ id: stays[d].id, mode: modes[Math.random() * modes.length | 0], stay: 0 });
     }
     if (!plan.length || poi(plan.at(-1).id).type === 'stay') continue;

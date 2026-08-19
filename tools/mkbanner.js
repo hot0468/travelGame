@@ -69,6 +69,8 @@ const ART = {
   activity:`<circle cx="0" cy="-18" r="9"/><path d="M0-8v20M-16 26l16-14 16 14M-18 2h36" fill="none" stroke-width="6" stroke-linecap="round"/>`,
   nature: `<path d="M0-28l30 40h-60z"/><path d="M0-6l24 32h-48z"/><rect x="-5" y="22" width="10" height="8"/>`,
   shopping:`<path d="M-26-12h52l-5 36h-42z"/><path d="M-12-12v-8a12 12 0 0 1 24 0v8" fill="none" stroke-width="5"/>`,
+  // 락커 문 네 짝 — 코인락커의 인상 그대로
+  locker:  `<rect x="-30" y="-26" width="60" height="52" rx="4"/><path d="M0-26v52M-30 0h60" stroke-width="3"/><circle cx="-8" cy="-13" r="3" fill="var(--k)" stroke="none"/><circle cx="-8" cy="13" r="3" fill="var(--k)" stroke="none"/><circle cx="22" cy="-13" r="3" fill="var(--k)" stroke="none"/><circle cx="22" cy="13" r="3" fill="var(--k)" stroke="none"/>`,
 };
 
 function svg(kind, name) {

@@ -39,6 +39,8 @@ REGIONS.fukuoka = {
     nature: { name: '자연경관', ico: 'trees' },
     photo: { name: '포토스팟', ico: 'camera' },
     culture: { name: '문화', ico: 'landmark' },
+    // 짐 보관소. 여기 들르면 그 뒤로는 빈 몸으로 다닌다(체력·수단 제약이 풀린다).
+    locker: { name: '짐 보관', ico: 'package' },
   },
   foodTypes: {
     meal: { name: '식사', ico: 'utensils' },
@@ -130,6 +132,14 @@ REGIONS.fukuoka = {
     { id: 'nokocafe', gu: '주오구', name: '텐진 커피스탠드', type: 'food', sub: 'cafe',
       lat: 33.5908, lng: 130.3982, cost: 6300, stay: 40, joy: 6, open: [480, 1260] },
 
+    // ── 짐 보관소. 일본은 역 코인락커가 촘촘하다. 요금은 원화 환산(대형 700엔 안팎).
+    { id: 'lk_hakata', gu: '하카타구', name: '하카타역 코인락커', type: 'sight', sub: 'locker',
+      lat: 33.5898, lng: 130.4207, cost: 6300, stay: 10, joy: 0, open: [0, 1440] },
+    { id: 'lk_tenjin', gu: '주오구', name: '텐진역 코인락커', type: 'sight', sub: 'locker',
+      lat: 33.5914, lng: 130.3989, cost: 6300, stay: 10, joy: 0, open: [300, 1440] },
+    { id: 'lk_airport', gu: '하카타구', name: '후쿠오카공항 수하물보관소', type: 'sight', sub: 'locker',
+      lat: 33.5859, lng: 130.4506, cost: 9000, stay: 10, joy: 0, open: [390, 1290] },
+
     // 숙소 4
     { id: 'gh_hakata', gu: '하카타구', name: '하카타 게스트하우스', type: 'stay', tier: 'guesthouse',
       lat: 33.5905, lng: 130.4165, cost: 36000, stay: 0, joy: 4, open: [900, 1440] },
@@ -183,20 +193,20 @@ REGIONS.fukuoka = {
       desc: '부산에서 배 타고 갑니다. 라멘만 먹어도 좋아요.',
       days: 2, budget: 700000, people: 2, stamina: 110, staminaType: 'energizer',
       // 고속선 폐지로 크루즈선 왕복(밤배+낮배 5.5h)이 이동시간을 크게 먹는다 — par 도 같이 내렸다
-      age: '20대', startDow: 4, must: ['ichiran'], minSights: 2, endBy: 1260, par: 254 },
+      age: '20대', startDow: 4, must: ['ichiran'], minSights: 2, endBy: 1260, luggage: 'cabin', par: 254 },
     { id: 'f2', lv: 2, title: '부모님과 다자이후', from: '서울',
       desc: '부모님 모시고 갑니다. 너무 많이 걷지 않았으면 해요.',
       days: 2, budget: 1200000, people: 3, stamina: 90, staminaType: 'morning',
-      age: '60대 이상', startDow: 1, must: ['dazaifu'], minSights: 3, endBy: 1200, par: 177 },
+      age: '60대 이상', startDow: 1, must: ['dazaifu'], minSights: 3, endBy: 1200, luggage: 'large', par: 177 },
     { id: 'f3', lv: 3, title: '아이랑 셋이서', from: '서울',
       desc: '아이가 동물을 좋아해요. 뛰어놀 데가 있으면 좋겠습니다.',
       days: 3, budget: 1800000, people: 4, stamina: 100, staminaType: 'motionsick',
-      age: '아이 동반', startDow: 5, must: ['zoo'], minSights: 4, endBy: 1230, par: 296 },
+      age: '아이 동반', startDow: 5, must: ['zoo'], minSights: 4, endBy: 1230, luggage: 'cabin', par: 137 },
     { id: 'f4', lv: 3, title: '부모님과 유후인 온천', from: '서울',
       desc: '부모님 모시고 갑니다. 유후인 온천 료칸에서 하루 묵고 싶어요. 무리한 일정은 안 돼요.',
       // 2박 3일 — 유후인 왕복이 5시간이라 1박으로는 점수가 음수까지 눌린다(상한 -124 실측).
       days: 3, budget: 2600000, people: 3, stamina: 85, staminaType: 'morning',
       age: '60대 이상', startDow: 1, must: ['kinrinko', 'yu_ryokan'], minSights: 4,
-      minStayTier: 'hotel', endBy: 1230, par: 326 },
+      minStayTier: 'hotel', endBy: 1230, luggage: 'large', par: 246 },
   ],
 };

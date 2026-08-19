@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="472" height="208" viewBox="0 0 472 208">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd9a8"/><stop offset="1" stop-color="#ff9a3d"/>
+    </linearGradient>
+    <pattern id="p" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="9" height="18" fill="#fff" opacity=".07"/>
+    </pattern>
+  </defs>
+  <rect width="472" height="208" fill="url(#g)"/>
+  <rect width="472" height="208" fill="url(#p)"/>
+  <g transform="translate(236 94) scale(1.5)" fill="#fff" stroke="#fff"
+     stroke-width="2" opacity=".95" style="--k:#ff9a3d">
+    <rect x="-30" y="-26" width="60" height="52" rx="4"/><path d="M0-26v52M-30 0h60" stroke-width="3"/><circle cx="-8" cy="-13" r="3" fill="var(--k)" stroke="none"/><circle cx="-8" cy="13" r="3" fill="var(--k)" stroke="none"/><circle cx="22" cy="-13" r="3" fill="var(--k)" stroke="none"/><circle cx="22" cy="13" r="3" fill="var(--k)" stroke="none"/>
+  </g>
+  <text x="236" y="186" text-anchor="middle" fill="#fff" opacity=".95"
+    font-family="'Malgun Gothic',sans-serif" font-size="19" font-weight="700">식당</text>
+</svg>

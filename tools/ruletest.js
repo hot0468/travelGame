@@ -7,7 +7,7 @@ const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 eval(html.slice(html.indexOf('const DETOUR'), html.indexOf('// 상태'))
   // eval 은 함수 선언만 전역에 올린다 — const 로 둔 값은 직접 내보내야 아래 seg 에서 보인다.
   + ';global.TRANSPORT=TRANSPORT;global.BUFFS=BUFFS;global.travel=travel;global.arrival=arrival;'
-  + 'global.DRAIN_MOVE=DRAIN_MOVE;global.DRAIN_STAY=DRAIN_STAY;global.SLEEP_TIER=SLEEP_TIER;');
+  + 'global.LUG=LUG;global.LUGGAGE=LUGGAGE;global.DRAIN_MOVE=DRAIN_MOVE;global.DRAIN_STAY=DRAIN_STAY;global.SLEEP_TIER=SLEEP_TIER;');
 global.S = { region: 'busan' };
 global.poi = id => REGIONS.busan.pois.find(p => p.id === id);
 const ok = (c, m) => console.log((c ? '✔' : '✘ FAIL') + ' ' + m);

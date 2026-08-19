@@ -52,7 +52,9 @@ REGIONS.busan = {
     shopping: { name: '쇼핑',     ico: 'shopping-bag' },
     nature:   { name: '자연경관', ico: 'trees' },
     photo:    { name: '포토스팟', ico: 'camera' },
-    culture:  { name: '문화',     ico: 'landmark' }   // 전시·미술관·도서관·영화관
+    culture:  { name: '문화',     ico: 'landmark' },  // 전시·미술관·도서관·영화관
+    // 짐 보관소. 여기 들르면 그 뒤로는 빈 몸으로 다닌다(체력·수단 제약이 풀린다).
+    locker:   { name: '짐 보관',  ico: 'package' }
   },
   // 요일. 0=월 … 6=일. 여행 d일차의 요일 = (의뢰 startDow + d) % 7
   dayNames: ['월', '화', '수', '목', '금', '토', '일'],
@@ -292,6 +294,15 @@ REGIONS.busan = {
     { id: 'gh_choryang', gu: '동구', name: '초량 게스트하우스', type: 'stay', tier: 'guesthouse', lat: 35.1150, lng: 129.0390, cost: 26000, stay: 0, joy: 4, open: [900, 1440] },
     { id: 'gh_gwangalli', gu: '수영구', name: '광안리 게스트하우스', type: 'stay', tier: 'guesthouse', lat: 35.1535, lng: 129.1190, cost: 29000, stay: 0, joy: 5, open: [900, 1440] },
     { id: 'gh_seomyeon', gu: '부산진구', name: '서면 게스트하우스', type: 'stay', tier: 'guesthouse', lat: 35.1560, lng: 129.0580, cost: 27000, stay: 0, joy: 4, open: [900, 1440] },
+
+    // ── 짐 보관소. 요금은 대형 락커 하루 기준이다.
+    // 코인락커는 역 안이라 24시간 가깝게 열려 있고, 유인 보관소는 영업시간이 있다.
+    { id: 'lk_busanstn', gu: '동구', name: '부산역 코인락커', type: 'sight', sub: 'locker', lat: 35.1151, lng: 129.0413, cost: 4000, stay: 10, joy: 0, open: [0, 1440] },
+    { id: 'lk_seomyeon', gu: '부산진구', name: '서면역 코인락커', type: 'sight', sub: 'locker', lat: 35.1578, lng: 129.0594, cost: 4000, stay: 10, joy: 0, open: [300, 1440] },
+    { id: 'lk_haeundae', gu: '해운대구', name: '해운대역 코인락커', type: 'sight', sub: 'locker', lat: 35.1631, lng: 129.1589, cost: 4000, stay: 10, joy: 0, open: [300, 1440] },
+    { id: 'lk_nampo', gu: '중구', name: '남포역 코인락커', type: 'sight', sub: 'locker', lat: 35.0977, lng: 129.0345, cost: 4000, stay: 10, joy: 0, open: [300, 1440] },
+    // 유인 보관소는 값이 더 나가지만 큰 짐도 받아 준다.
+    { id: 'lk_service', gu: '동구', name: '부산역 짐보관 서비스', type: 'sight', sub: 'locker', lat: 35.1157, lng: 129.0420, cost: 8000, stay: 10, joy: 0, open: [480, 1260] }
   ],
 
   // 이어서 붙이면 손님이 특히 좋아하는 조합. 직전 일정과 방금 넣은 일정이 짝이면 성립하고,
@@ -354,20 +365,20 @@ REGIONS.busan = {
       id: 'q1', lv: 1, title: '첫 손님 · 바다가 보고 싶어요',
       from: '서울', stamina: 110, staminaType: 'energizer', age: '20대', startDow: 4,
       desc: '서울에서 갑니다. 부산 처음이에요. 바다만 보면 돼요.',
-      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, endBy: 1260, par: 340
+      days: 2, budget: 400000, people: 2, must: ['haeundae'], minSights: 3, endBy: 1260, luggage: 'cabin', par: 340
     },
     {
       id: 'q2', lv: 1, title: '뚜벅이 커플 · 알뜰하게',
       from: '대구', stamina: 100, staminaType: 'morning', age: '30대', startDow: 5,
       desc: '대구에서 갑니다. 부산에선 대중교통만 탈게요. 감천이랑 자갈치는 꼭이요!',
       days: 2, budget: 240000, people: 2, must: ['gamcheon', 'jagalchi'], minSights: 4,
-      banModes: ['taxi', 'car'], endBy: 1200, par: 450
+      banModes: ['taxi', 'car'], endBy: 1200, luggage: 'light', par: 409
     },
     {
       id: 'q3', lv: 2, title: '당일치기 출장 뒤풀이',
       from: '대구', stamina: 95, staminaType: 'night', age: '40대', startDow: 2,
       desc: '대구에서 아침에 출발해 당일로 다녀옵니다. 용궁사는 꼭 보고 싶어요. 셋이서 갑니다.',
-      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, endBy: 1380, par: 335
+      days: 1, budget: 260000, people: 3, must: ['yongkungsa'], minSights: 3, endBy: 1380, luggage: 'light', par: 295
     },
     {
       id: 'q4', lv: 3, title: '부모님 효도여행',
@@ -377,14 +388,14 @@ REGIONS.busan = {
       // 문제가 안 됐지만, 초과를 실패로 바꾼 뒤로는 풀리지 않는 의뢰가 된다. 광주 KTX 4인 왕복
       // 20만 + 호텔 2박 2객실 + 4인 식사 3일 기준으로 170만이 실제 하한선에 가깝다.
       days: 3, budget: 1700000, people: 4, must: ['taejongdae', 'beomeosa'], minSights: 5,
-      minStayTier: 'hotel', endBy: 1140, par: 392
+      minStayTier: 'hotel', endBy: 1140, luggage: 'large', par: 252
     },
     {
       id: 'q5', lv: 4, title: '아이 둘 데리고 가는 가족',
       from: '제주', stamina: 90, staminaType: 'morning', age: '아이 동반', startDow: 4,
       desc: '제주에서 아이 둘 데리고 갑니다. 롯데월드는 필수! 이동은 편했으면 해요.',
       // 같은 이유로 상향 — 제주 항공 4인 왕복에 롯데월드·아쿠아리움 4인 입장까지 얹으면 120만으로는 안 된다.
-      days: 3, budget: 1600000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, endBy: 1200, par: 402
+      days: 3, budget: 1600000, people: 4, must: ['lotteworld', 'aquarium'], minSights: 6, endBy: 1200, luggage: 'large', par: 360
     },
     {
       // 2인이라 객실이 1개뿐이라 최고급 호텔이 예산에 들어온다 — 다른 의뢰는 4인이라 2객실이 되어 불가능하다.
@@ -392,7 +403,7 @@ REGIONS.busan = {
       from: '서울', stamina: 95, staminaType: 'night', age: '30대', startDow: 3,
       desc: '서울에서 둘이 갑니다. 결혼 10주년이라 숙소만큼은 최고로 하고 싶어요. 예산은 넉넉합니다.',
       days: 3, budget: 2500000, people: 2, must: ['xthesky'], minSights: 4,
-      minStayTier: 'hotel', endBy: 1260, par: 588
+      minStayTier: 'hotel', endBy: 1260, luggage: 'cabin', par: 588
     }
   ]
 };

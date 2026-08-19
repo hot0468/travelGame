@@ -48,9 +48,11 @@ ok(!likesSub(R.quests[3], poi('lotteworld')) && likesSub(R.quests[3], poi('taejo
   ok(c40.joy === c20.joy + 3, '문화: 40대 ' + c40.joy + ' = 20대 ' + c20.joy + ' +3');
   const culture = R.pois.filter(p => p.sub === 'culture');
   ok(culture.length >= 5, '문화시설 ' + culture.length + '곳 (' + culture.slice(0, 3).map(p => p.name).join(', ') + ' …)');
-  const kinds = Object.keys(R.sightTypes);
+  // locker(짐 보관)는 선호 대상이 아니다 — 즐거우려고 가는 곳이 아니라
+  // 다음 이동을 가볍게 하려고 들르는 곳이라 joy 도 0 이다.
+  const kinds = Object.keys(R.sightTypes).filter(k => k !== 'locker');
   const liked = new Set(Object.values(R.ageTypes).flatMap(a => a.likes));
-  ok(kinds.every(k => liked.has(k)), '세부타입 ' + kinds.length + '종 모두 선호하는 연령대가 있음');
+  ok(kinds.every(k => liked.has(k)), '세부타입 ' + kinds.length + '종 모두 선호하는 연령대가 있음(짐 보관 제외)');
 }
 // 액티비티2 + 포토2 로 20대에 치우친 코스 (40대는 하나도 안 맞는다)
 const mixed=['lotteworld','aquarium','gwangalli','gamcheon'].map(id=>({id,mode:'taxi',stay:60}));
