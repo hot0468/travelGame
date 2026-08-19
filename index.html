@@ -109,6 +109,11 @@
                 line-height:1.4;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.62));
                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #poipop .cred a{color:#fff;text-decoration:underline}
+  /* 다녀온 사람들 말 — 읽기 전용 힌트다. 점수에는 관여하지 않는다. */
+  #poipop .revs{margin-top:8px;padding-top:7px;border-top:1px dashed var(--line)}
+  #poipop .revhd{font-size:10.5px;color:var(--dim);font-weight:700;margin-bottom:2px}
+  #poipop .rev{display:flex;gap:5px;font-size:11px;line-height:1.5;color:#4a4459;margin-top:3px}
+  #poipop .rev .q{color:var(--acc);font-weight:800;flex:0 0 auto;font-size:13px;line-height:1.35}
   /* 팝업이 아래에서 튀어오르며 살짝 넘겼다 제자리로 */
   @keyframes popin{from{opacity:0;transform:scale(.7) translateY(14px)}to{opacity:1;transform:none}}
   /* 선택한 핀에서 퍼져나가는 파동 */
@@ -560,6 +565,7 @@
   <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol>
   <symbol id="i-luggage" viewBox="0 0 24 24"><path d="M6 20a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2" /> <path d="M8 18V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v14" /> <path d="M10 20h4" /> <circle cx="16" cy="20" r="2" /> <circle cx="8" cy="20" r="2" /></symbol>
   <symbol id="i-maximize" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3" /> <path d="M21 8V5a2 2 0 0 0-2-2h-3" /> <path d="M3 16v3a2 2 0 0 0 2 2h3" /> <path d="M16 21h3a2 2 0 0 0 2-2v-3" /></symbol>
+  <symbol id="i-message-circle" viewBox="0 0 24 24"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" /></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
   <symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /> <path d="M12 22V12" /> <polyline points="3.29 7 12 12 20.71 7" /> <path d="m7.5 4.27 9 5.15" /></symbol>
   <symbol id="i-party-popper" viewBox="0 0 24 24"><path d="M5.8 11.3 2 22l10.7-3.79" /> <path d="M4 3h.01" /> <path d="M22 8h.01" /> <path d="M15 2h.01" /> <path d="M22 20h.01" /> <path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" /> <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17" /> <path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7" /> <path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z" /></symbol>
@@ -758,6 +764,7 @@
 <script src="data/subway.js"></script>
 <script src="data/transit.js"></script>
 <script src="data/photos.js"></script>
+<script src="data/reviews.js"></script>
 <script>
 // ─────────────────────────────────────────────────────────────
 // 엔진
@@ -2235,6 +2242,7 @@ function openPoi(id) {
     </div>
     <div class="kv">${meta}${p.closed ? `<br>${ic('calendar-days')} 매주 ${p.closed.map(d => REGIONS[S.region].dayNames[d]).join('·')}요일 휴무` : ''}${p.type === 'stay' ? `<br>${ic('calendar-days')} 금·토 체크인은 40% 할증`
       + `<br>${ic('moon')} ${TIER_NAME[p.tier]} — 수면 회복 ${SLEEP_TIER[p.tier] >= 1 ? '+' : ''}${Math.round((SLEEP_TIER[p.tier] - 1) * 100)}%` : ''}<br>${ic("smile")} ${joyTag(p.joy)}${n ? `<br><b style="color:var(--acc)">일정에 ${n}회 포함됨</b>` : ''}</div>
+    ${reviewBlock(id)}
     ${blockReason
       ? `<div class="kv" style="color:var(--bad)">${ic('circle-alert')} ${S.day + 1}일차에 넣을 수 없습니다 — ${esc(blockReason)}</div>`
       : `<button class="go" data-add="${id}">${ic('plus')} 일정에 추가</button>`}`;
@@ -2479,6 +2487,16 @@ function subwayLine(res, r) {
     <span style="opacity:.7">· ${p.stops}정거장${p.transfers ? ` · 환승 ${p.transfers}회` : ' · 직통'}
       · 승차 ${p.min}분<span style="opacity:.6">(실제 노선)</span></span>
     ${far ? `<br><span style="color:var(--warn)">역에서 ${Math.max(p.walkFrom, p.walkTo).toFixed(1)}km — 실제로는 버스·택시 구간</span>` : ''}
+  </div>`;
+}
+
+// 다녀온 사람들 말. data/reviews.js 가 없거나 그 장소가 없으면 그리지 않는다.
+function reviewBlock(id) {
+  const rs = (window.REVIEWS || {})[id];
+  if (!rs || !rs.length) return '';
+  return `<div class="revs">
+    <div class="revhd">${ic('message-circle')} 다녀온 사람들</div>
+    ${rs.map(t => `<div class="rev"><span class="q">·</span><span>${esc(t)}</span></div>`).join('')}
   </div>`;
 }
 

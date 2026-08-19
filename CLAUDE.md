@@ -7,6 +7,7 @@
 
 ```
 index.html      UI + 엔진 전부 인라인 (~1100줄). CSS → HTML → JS(엔진 → 상태 → 렌더 → 이벤트 → 자체점검)
+data/reviews.js 장소 리뷰 3개씩(175곳 525개). tools/mkreview.js 가 생성한다(수기 편집 금지).
 data/seoul.js   서울 — 뼈대만 있는 준비 중 지역. 새 지역을 만들 때 이 파일을 보고 시작한다.
 data/busan.js   부산 데이터: REGIONS.busan = { mapImage, origins, starts, staminaTypes,
                 sightTypes/foodTypes/ageTypes, pois(136), quests(6) }
@@ -50,7 +51,7 @@ tools/          검증·캡처 스크립트 (아래)
 ## 검증 — 코드·데이터를 바꿨으면 반드시
 
 ```bash
-node tools/all.js          # 스위트 13종 전부 (selftest/stam/buff/sub/dow/ret/day/rule/subway/transit/lug/pair/balance)
+node tools/all.js          # 스위트 14종 전부 (selftest/stam/buff/sub/dow/ret/day/rule/subway/transit/lug/pair/balance)
 ```
 
 - **밸런스 재조정 절차**: POI·의뢰·엔진 수치를 바꾸면 `node tools/balance.js` 로 의뢰별
@@ -223,5 +224,15 @@ powershell -NoProfile -File tools/probe.ps1                                     
     다른 페널티와 곱해지는 값이라 1.4 를 넘기지 않는다(`lugtest.js` 가 지킨다).
   - 짐 보관소는 `type:'sight'` + `sub:'locker'` 다. 새 type 을 만들면 경비·정렬·통계가 전부
     갈라진다. **관광지 집계에는 안 들어간다** — joy 0 짜리로 손님 기대를 채울 수는 없다.
+- **리뷰**: 팝업에 "다녀온 사람들" 3줄이 붙는다(`data/reviews.js`). **읽기 전용 힌트다** —
+  점수·체력에 관여하지 않고, 이미 있는 규칙(짐·도보·연령 선호·휴무·영업시간·가격)을
+  손님 말투로 드러낼 뿐이다. `revtest.js` 가 엔진이 REVIEWS 를 참조하지 않는지 검사한다.
+  - `tools/mkreview.js` 가 장소 데이터를 보고 조건에 맞는 문장을 고른다 — 역에서 2km 넘으면
+    "걷는 시간이 길어서…", 값이 중앙값의 2배면 "값은 좀 나가지만…" 식이다.
+    **장소를 고치면 다시 구워야** 내용이 따라온다.
+  - 항목마다 `no` 로 "이 종류에는 안 붙는다" 를 적는다. 코인락커에 "밤에 가면 분위기가",
+    숙소에 "두어 시간은 잡아야" 가 붙던 것을 그렇게 걸렀다.
+  - 시드를 고정해 매번 같은 문장이 나온다 — 안 그러면 diff 가 지저분하고 팝업을 여닫을
+    때마다 말이 바뀐다.
 - 선호: `ageTypes[연령].likes` 에 든 관광지 sub 는 만족도 +3.
 - 점수 = 만족도×10 − 이동분 + 예산잔여%×100. 별: par×1.25↑=3, par↑=2, par×0.75↑=1.
